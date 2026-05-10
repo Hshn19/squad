@@ -34,8 +34,24 @@ const SAVINGS_HISTORY = [
   { month: 'May', savings: 145 },
 ];
 
+// ── Safe array guard — returns true only if array is chart-ready ──
+function isSafe(arr) {
+  return (
+    Array.isArray(arr) &&
+    arr.length >= 2 &&
+    arr.every((v) => typeof v === 'number' && !isNaN(v) && isFinite(v) && v > 0)
+  );
+}
+
 // ── Compact SVG Line Chart ──
 function LineChart({ lines, height = 100, xLabels, predicted = [] }) {
+  if (!lines || lines.length === 0) return null;
+  if (!xLabels || xLabels.length < 2) return null;
+  for (const line of lines) {
+    if (!isSafe(line.data)) return null;
+    if (line.data.length !== xLabels.length) return null;
+  }
+
   const W = 300, H = height;
   const PAD = { top: 16, right: 40, bottom: 20, left: 32 };
   const chartW = W - PAD.left - PAD.right;
@@ -44,24 +60,20 @@ function LineChart({ lines, height = 100, xLabels, predicted = [] }) {
   const allValues = lines.flatMap((l) => l.data);
   const minVal = Math.min(...allValues) * 0.88;
   const maxVal = Math.max(...allValues) * 1.08;
+  const range = maxVal - minVal;
+
+  if (range === 0 || !isFinite(range)) return null;
 
   const toX = (i) => PAD.left + (i / (xLabels.length - 1)) * chartW;
-  const toY = (v) => PAD.top + chartH - ((v - minVal) / (maxVal - minVal)) * chartH;
+  const toY = (v) => PAD.top + chartH - ((v - minVal) / range) * chartH;
 
-  const makePath = (data, from = 0) =>
-    data.slice(from).map((v, i) =>
-      `${i === 0 ? 'M' : 'L'} ${toX(i + from)} ${toY(v)}`
-    ).join(' ');
-
-  // Y axis labels — 3 ticks only
   const ticks = [minVal, (minVal + maxVal) / 2, maxVal].map((v) => ({
     y: toY(v), label: Math.round(v),
   }));
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ overflow: 'visible' }}>
-
-      {/* Grid — 3 lines only */}
+      {/* Grid */}
       {ticks.map((t, i) => (
         <g key={i}>
           <line x1={PAD.left} y1={t.y} x2={W - PAD.right} y2={t.y}
@@ -72,8 +84,8 @@ function LineChart({ lines, height = 100, xLabels, predicted = [] }) {
         </g>
       ))}
 
-      {/* Predicted region */}
-      {predicted.length > 0 && (
+      {/* Predicted region shading */}
+      {predicted.length > 0 && predicted[0] < xLabels.length && (
         <rect
           x={toX(predicted[0])} y={PAD.top}
           width={toX(xLabels.length - 1) - toX(predicted[0])}
@@ -83,37 +95,48 @@ function LineChart({ lines, height = 100, xLabels, predicted = [] }) {
       )}
 
       {lines.map((line, li) => {
-        const solidEnd = predicted.length > 0 ? predicted[0] + 1 : line.data.length;
+        const solidEnd = predicted.length > 0 ? Math.min(predicted[0] + 1, line.data.length) : line.data.length;
+        const solidData = line.data.slice(0, solidEnd);
+
+        const solidPath = solidData.map((v, i) =>
+          `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)} ${toY(v).toFixed(1)}`
+        ).join(' ');
+
+        const areaPath = solidData.length >= 2
+          ? `${solidPath} L ${toX(solidData.length - 1).toFixed(1)} ${(PAD.top + chartH).toFixed(1)} L ${PAD.left.toFixed(1)} ${(PAD.top + chartH).toFixed(1)} Z`
+          : null;
+
+        const dashedPath = predicted.length > 0 && predicted[0] < line.data.length
+          ? line.data.slice(predicted[0]).map((v, i) =>
+              `${i === 0 ? 'M' : 'L'} ${toX(i + predicted[0]).toFixed(1)} ${toY(v).toFixed(1)}`
+            ).join(' ')
+          : null;
+
+        const keyDots = [...new Set([0, line.data.length - 1, ...(predicted.length > 0 ? [predicted[0]] : [])])];
+
         return (
           <g key={li}>
-            {/* Area */}
-            <path
-              d={`${makePath(line.data)} L ${toX(line.data.length - 1)} ${PAD.top + chartH} L ${PAD.left} ${PAD.top + chartH} Z`}
-              fill={line.color} fillOpacity="0.07" stroke="none"
-            />
-            {/* Solid segment */}
-            <path d={makePath(line.data, 0).split(' ').slice(0, solidEnd * 3).join(' ')}
-              fill="none" stroke={line.color} strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round"
-            />
-            {/* Dashed predicted segment */}
-            {predicted.length > 0 && (
-              <path d={makePath(line.data, predicted[0])}
-                fill="none" stroke={line.color} strokeWidth="1.8"
-                strokeDasharray="5 3" strokeLinecap="round" opacity="0.75"
-              />
+            {areaPath && (
+              <path d={areaPath} fill={line.color} fillOpacity="0.07" stroke="none" />
             )}
-            {/* Dots — only at key points (first, last, predicted boundary) */}
-            {[0, line.data.length - 1, ...(predicted.length > 0 ? [predicted[0]] : [])].map((idx) => (
-              idx < line.data.length && (
+            {solidData.length >= 2 && (
+              <path d={solidPath} fill="none" stroke={line.color} strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            {dashedPath && (
+              <path d={dashedPath} fill="none" stroke={line.color} strokeWidth="1.8"
+                strokeDasharray="5 3" strokeLinecap="round" opacity="0.75" />
+            )}
+            {keyDots.map((idx) => {
+              if (idx < 0 || idx >= line.data.length) return null;
+              return (
                 <circle key={idx}
                   cx={toX(idx)} cy={toY(line.data[idx])} r="3"
                   fill={predicted.includes(idx) ? '#fff' : line.color}
                   stroke={line.color} strokeWidth="2"
                 />
-              )
-            ))}
-            {/* Last value label */}
+              );
+            })}
             <text
               x={toX(line.data.length - 1) + 4}
               y={toY(line.data[line.data.length - 1]) - 4}
@@ -125,11 +148,12 @@ function LineChart({ lines, height = 100, xLabels, predicted = [] }) {
         );
       })}
 
-      {/* X labels */}
       {xLabels.map((lbl, i) => (
         <text key={i} x={toX(i)} y={H - 3}
-          fontSize="8" fill={predicted.includes(i) ? '#00C896' : '#ccc'}
-          textAnchor="middle" fontWeight={predicted.includes(i) ? '600' : '400'}
+          fontSize="8"
+          fill={predicted.includes(i) ? '#00C896' : '#ccc'}
+          textAnchor="middle"
+          fontWeight={predicted.includes(i) ? '600' : '400'}
         >
           {lbl}{predicted.includes(i) ? '*' : ''}
         </text>
@@ -139,7 +163,9 @@ function LineChart({ lines, height = 100, xLabels, predicted = [] }) {
 }
 
 function DonutChart({ data }) {
+  if (!data || data.length === 0) return null;
   const total = data.reduce((s, d) => s + d.value, 0);
+  if (total === 0) return null;
   const r = 35, cx = 45, cy = 45, circ = 2 * Math.PI * r;
   let off = 0;
   const slices = data.map((d) => {
@@ -165,14 +191,24 @@ function DonutChart({ data }) {
 
 function TabBtn({ label, active, onClick, highlight }) {
   return (
-    <button onClick={onClick} style={{
-      flex: 1, padding: '10px 0', fontSize: 11, fontWeight: 500,
-      color: active ? '#6C63FF' : '#bbb',
-      borderBottom: active ? '2px solid #6C63FF' : '2px solid transparent',
-      background: 'none', border: 'none',
-      borderBottom: active ? '2px solid #6C63FF' : '2px solid transparent',
-      cursor: 'pointer', fontFamily: 'inherit', position: 'relative',
-    }}>
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        padding: '10px 0',
+        fontSize: 11,
+        fontWeight: 500,
+        color: active ? '#6C63FF' : '#bbb',
+        borderTop: 'none',
+        borderLeft: 'none',
+        borderRight: 'none',
+        borderBottom: active ? '2px solid #6C63FF' : '2px solid transparent',
+        background: 'none',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        position: 'relative',
+      }}
+    >
       {label}
       {highlight && (
         <span style={{
@@ -192,7 +228,9 @@ function Legend({ items }) {
           <div style={{
             width: 16, height: 2.5, borderRadius: 2, background: item.color,
             opacity: item.dashed ? 0.6 : 1,
-            backgroundImage: item.dashed ? `repeating-linear-gradient(90deg,${item.color} 0,${item.color} 4px,transparent 4px,transparent 7px)` : 'none',
+            backgroundImage: item.dashed
+              ? `repeating-linear-gradient(90deg,${item.color} 0,${item.color} 4px,transparent 4px,transparent 7px)`
+              : 'none',
           }} />
           <span style={{ fontSize: 9, color: '#aaa' }}>{item.label}</span>
         </div>
@@ -209,6 +247,7 @@ export default function MirrorPage() {
   const [forecastError, setForecastError] = useState(false);
   const [forecastFetched, setForecastFetched] = useState(false);
 
+  // Live totals from context transactions
   const liveTotals = {};
   transactions.forEach((tx) => {
     if (tx.amount < 0 && tx.category)
@@ -239,17 +278,25 @@ export default function MirrorPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          spending: mergedCategories, totalSpent, balances,
+          spending: mergedCategories,
+          totalSpent,
+          balances,
           history: liveHistory.map((h, i) => ({
-            month: h.month, total: h.personal + h.squad,
+            month: h.month,
+            total: h.personal + h.squad,
             savings: SAVINGS_HISTORY[i]?.savings || 150,
           })),
         }),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+      if (!data.spendingForecast || !Array.isArray(data.spendingForecast) || data.spendingForecast.length < 1) {
+        throw new Error('Invalid forecast data');
+      }
       setForecast(data);
       setForecastFetched(true);
-    } catch {
+    } catch (err) {
+      console.error('Forecast fetch error:', err);
       setForecastError(true);
     }
     setForecastLoading(false);
@@ -259,11 +306,54 @@ export default function MirrorPage() {
     if (tab === 'forecast' && !forecastFetched && !forecastLoading) fetchForecast();
   }, [tab]);
 
-  const forecastMonths   = forecast ? [...xMonths, ...forecast.spendingForecast.map((f) => f.month)] : xMonths;
-  const forecastPersonal = forecast ? [...liveHistory.map((h) => h.personal), ...forecast.spendingForecast.map((f) => Math.round(f.amount * 0.93))] : liveHistory.map((h) => h.personal);
-  const forecastSquad    = forecast ? [...liveHistory.map((h) => h.squad),    ...forecast.spendingForecast.map((f) => Math.round(f.amount * 0.07))] : liveHistory.map((h) => h.squad);
-  const forecastSavings  = forecast ? [...SAVINGS_HISTORY.map((h) => h.savings), ...forecast.savingsForecast.map((f) => f.amount)] : SAVINGS_HISTORY.map((h) => h.savings);
-  const predIdxs         = forecast ? forecast.spendingForecast.map((_, i) => xMonths.length + i) : [];
+  // Build forecast arrays — only when forecast exists and is valid
+  const forecastMonths = forecast
+    ? [...xMonths, ...forecast.spendingForecast.map((f) => f.month)]
+    : xMonths;
+
+  const forecastPersonal = forecast
+    ? [
+        ...liveHistory.map((h) => h.personal),
+        ...forecast.spendingForecast.map((f) => {
+          const v = Math.round((f.amount || 0) * 0.93);
+          return v > 0 ? v : 700;
+        }),
+      ]
+    : liveHistory.map((h) => h.personal);
+
+  const forecastSquad = forecast
+    ? [
+        ...liveHistory.map((h) => h.squad),
+        ...forecast.spendingForecast.map((f) => {
+          const v = Math.round((f.amount || 0) * 0.07);
+          return v > 0 ? v : 50;
+        }),
+      ]
+    : liveHistory.map((h) => h.squad);
+
+  const forecastSavings = forecast
+    ? [
+        ...SAVINGS_HISTORY.map((h) => h.savings),
+        ...forecast.savingsForecast.map((f) => {
+          const v = Number(f.amount);
+          return v > 0 ? v : 150;
+        }),
+      ]
+    : SAVINGS_HISTORY.map((h) => h.savings);
+
+  const predIdxs = forecast
+    ? forecast.spendingForecast.map((_, i) => xMonths.length + i)
+    : [];
+
+  // Only pass to chart when both data AND labels are ready and lengths match
+  const forecastChartsReady =
+    forecast &&
+    forecastMonths.length === forecastPersonal.length &&
+    forecastMonths.length === forecastSquad.length &&
+    forecastMonths.length === forecastSavings.length &&
+    isSafe(forecastPersonal) &&
+    isSafe(forecastSquad) &&
+    isSafe(forecastSavings);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -367,7 +457,7 @@ export default function MirrorPage() {
               </div>
             </div>
 
-            {/* Savings trend line chart */}
+            {/* Savings trend */}
             <div style={{ background: '#fff', borderRadius: 16, padding: 14, border: '0.5px solid #eef0f4', marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>Savings trend</p>
@@ -478,7 +568,9 @@ export default function MirrorPage() {
                   animation: 'spin .8s linear infinite',
                 }} />
                 <p style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>AI is analysing your spending…</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>Building your personalised 3-month forecast</p>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
+                  Building your personalised 3-month forecast
+                </p>
               </div>
             )}
 
@@ -487,11 +579,14 @@ export default function MirrorPage() {
                 <p style={{ fontSize: 22, marginBottom: 8 }}>⚠️</p>
                 <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e', marginBottom: 4 }}>Couldn't load forecast</p>
                 <p style={{ fontSize: 11, color: '#aaa', marginBottom: 16 }}>Check your connection and try again</p>
-                <button onClick={() => { setForecastFetched(false); fetchForecast(); }} style={{
-                  padding: '10px 20px', borderRadius: 12, border: 'none',
-                  background: '#6C63FF', color: '#fff', fontSize: 13,
-                  fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                }}>Retry</button>
+                <button
+                  onClick={() => { setForecastFetched(false); setForecastError(false); fetchForecast(); }}
+                  style={{
+                    padding: '10px 20px', borderRadius: 12, border: 'none',
+                    background: '#6C63FF', color: '#fff', fontSize: 13,
+                    fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >Retry</button>
               </div>
             )}
 
@@ -521,46 +616,64 @@ export default function MirrorPage() {
                   <p style={{ fontSize: 12, color: '#fff', lineHeight: 1.6 }}>{forecast.coachMessage}</p>
                 </div>
 
-                {/* Spending + Squad forecast */}
+                {/* Spending + Squad forecast chart */}
                 <div style={{ background: '#fff', borderRadius: 16, padding: 14, border: '0.5px solid #eef0f4', marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                     <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>Spending forecast</p>
                     <span style={{ fontSize: 9, color: '#00C896' }}>* = predicted</span>
                   </div>
-                  <p style={{ fontSize: 10, color: '#aaa', marginBottom: 10 }}>Personal vs Squad · Jan–{forecastMonths[forecastMonths.length - 1]}</p>
-                  <LineChart
-                    lines={[
-                      { data: forecastPersonal, color: '#6C63FF' },
-                      { data: forecastSquad,    color: '#00C896' },
-                    ]}
-                    xLabels={forecastMonths}
-                    height={110}
-                    predicted={predIdxs}
-                  />
-                  <Legend items={[
-                    { label: 'Personal',  color: '#6C63FF' },
-                    { label: 'Squad',     color: '#00C896' },
-                    { label: 'Predicted', color: '#6C63FF', dashed: true },
-                  ]} />
+                  <p style={{ fontSize: 10, color: '#aaa', marginBottom: 10 }}>
+                    Personal vs Squad · Jan–{forecastMonths[forecastMonths.length - 1]}
+                  </p>
+                  {forecastChartsReady ? (
+                    <>
+                      <LineChart
+                        lines={[
+                          { data: forecastPersonal, color: '#6C63FF' },
+                          { data: forecastSquad,    color: '#00C896' },
+                        ]}
+                        xLabels={forecastMonths}
+                        height={110}
+                        predicted={predIdxs}
+                      />
+                      <Legend items={[
+                        { label: 'Personal',  color: '#6C63FF' },
+                        { label: 'Squad',     color: '#00C896' },
+                        { label: 'Predicted', color: '#6C63FF', dashed: true },
+                      ]} />
+                    </>
+                  ) : (
+                    <div style={{ padding: '20px 0', textAlign: 'center', color: '#aaa', fontSize: 12 }}>
+                      Chart data unavailable
+                    </div>
+                  )}
                 </div>
 
-                {/* Savings forecast */}
+                {/* Savings forecast chart */}
                 <div style={{ background: '#fff', borderRadius: 16, padding: 14, border: '0.5px solid #eef0f4', marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
                     <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>Savings forecast</p>
                     <span style={{ fontSize: 9, color: '#00C896' }}>* = predicted</span>
                   </div>
                   <p style={{ fontSize: 10, color: '#aaa', marginBottom: 10 }}>Based on current spending patterns</p>
-                  <LineChart
-                    lines={[{ data: forecastSavings, color: '#00C896' }]}
-                    xLabels={forecastMonths}
-                    height={90}
-                    predicted={predIdxs}
-                  />
-                  <Legend items={[
-                    { label: 'Savings',   color: '#00C896' },
-                    { label: 'Predicted', color: '#00C896', dashed: true },
-                  ]} />
+                  {forecastChartsReady ? (
+                    <>
+                      <LineChart
+                        lines={[{ data: forecastSavings, color: '#00C896' }]}
+                        xLabels={forecastMonths}
+                        height={90}
+                        predicted={predIdxs}
+                      />
+                      <Legend items={[
+                        { label: 'Savings',   color: '#00C896' },
+                        { label: 'Predicted', color: '#00C896', dashed: true },
+                      ]} />
+                    </>
+                  ) : (
+                    <div style={{ padding: '20px 0', textAlign: 'center', color: '#aaa', fontSize: 12 }}>
+                      Chart data unavailable
+                    </div>
+                  )}
                   {forecast.projectedAnnualSavings && (
                     <div style={{ marginTop: 8, background: '#E8FFF5', borderRadius: 8, padding: '7px 10px', border: '0.5px solid #B0FFD4' }}>
                       <p style={{ fontSize: 11, fontWeight: 700, color: '#0F6E56' }}>

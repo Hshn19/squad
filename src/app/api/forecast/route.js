@@ -1,84 +1,129 @@
 import { NextResponse } from 'next/server';
 
+const FALLBACK = {
+  spendingForecast: [
+    { month: 'Jun', amount: 755, reasoning: 'Slight reduction from better food habits' },
+    { month: 'Jul', amount: 720, reasoning: 'Continued improvement, lower transport' },
+    { month: 'Aug', amount: 695, reasoning: 'Consistent savings momentum building' },
+  ],
+  savingsForecast: [
+    { month: 'Jun', amount: 175 },
+    { month: 'Jul', amount: 205 },
+    { month: 'Aug', amount: 230 },
+  ],
+  topRisk: 'Food spending at 35% of budget remains the biggest monthly risk.',
+  topOpportunity: 'Reducing food by RM 80 adds RM 960 to annual savings.',
+  projectedAnnualSavings: 2340,
+  coachMessage: "You're on a solid track, Harshini. Small cuts in food and transport could push your savings above RM 200/month by August.",
+};
+
 export async function POST(req) {
+  // Always return JSON, never a 500
   try {
-    const { spending, totalSpent, balances, history } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { spending = [], totalSpent = 800, balances = {}, history = [] } = body;
 
-    const spendingSummary = spending
-      .map((c) => `${c.label}: RM ${c.current} (target RM ${c.better})`)
-      .join(', ');
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      console.error('GROQ_API_KEY is not set');
+      return NextResponse.json(FALLBACK);
+    }
 
-    const historySummary = history
-      .map((h) => `${h.month}: spent RM ${h.total}, saved RM ${h.savings}`)
-      .join('; ');
+    const spendingSummary = spending.length > 0
+      ? spending.map((c) => `${c.label}: RM ${c.current} (target RM ${c.better})`).join(', ')
+      : 'Food: RM 280, Transport: RM 160, Groceries: RM 120, Bills: RM 100, Shopping: RM 85, Squad: RM 55';
+
+    const historySummary = history.length > 0
+      ? history.map((h) => `${h.month}: spent RM ${h.total}, saved RM ${h.savings}`).join('; ')
+      : 'Feb: spent RM 720, saved RM 180; Mar: spent RM 850, saved RM 120; Apr: spent RM 780, saved RM 160; May: spent RM 800, saved RM 145';
 
     const prompt = `You are a personal finance AI for a Malaysian university student named Harshini.
 
 Spending this month (May 2026): ${spendingSummary}. Total: RM ${totalSpent}.
 Monthly history: ${historySummary}.
-Current balance: RM ${balances.main?.toFixed(2)}, savings account: RM ${balances.savings}.
+Current main balance: RM ${balances.main ?? 613}, savings: RM ${balances.savings ?? 320}.
 
-Return ONLY valid JSON, no markdown, no explanation:
+Return ONLY a valid JSON object. No markdown, no code fences, no explanation whatsoever. Start your response with { and end with }.
+
 {
   "spendingForecast": [
-    { "month": "Jun", "amount": <number>, "reasoning": "<max 10 words>" },
-    { "month": "Jul", "amount": <number>, "reasoning": "<max 10 words>" },
-    { "month": "Aug", "amount": <number>, "reasoning": "<max 10 words>" }
+    { "month": "Jun", "amount": <integer>, "reasoning": "<10 words max>" },
+    { "month": "Jul", "amount": <integer>, "reasoning": "<10 words max>" },
+    { "month": "Aug", "amount": <integer>, "reasoning": "<10 words max>" }
   ],
   "savingsForecast": [
-    { "month": "Jun", "amount": <number> },
-    { "month": "Jul", "amount": <number> },
-    { "month": "Aug", "amount": <number> }
+    { "month": "Jun", "amount": <integer> },
+    { "month": "Jul", "amount": <integer> },
+    { "month": "Aug", "amount": <integer> }
   ],
   "topRisk": "<one sentence>",
   "topOpportunity": "<one sentence>",
-  "projectedAnnualSavings": <number>,
-  "coachMessage": "<2 sentences of personalised advice for Harshini>"
+  "projectedAnnualSavings": <integer>,
+  "coachMessage": "<2 sentences personalised for Harshini>"
 }`;
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.4,
-        max_tokens: 600,
+        temperature: 0.3,
+        max_tokens: 500,
       }),
     });
 
-    const data = await response.json();
-    const raw = data.choices?.[0]?.message?.content?.trim() || '{}';
-
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      const clean = raw.replace(/```json|```/g, '').trim();
-      parsed = JSON.parse(clean);
+    if (!groqRes.ok) {
+      const errText = await groqRes.text().catch(() => 'unknown');
+      console.error('Groq API error:', groqRes.status, errText);
+      return NextResponse.json(FALLBACK);
     }
 
-    return NextResponse.json(parsed);
+    const groqData = await groqRes.json();
+    const raw = groqData.choices?.[0]?.message?.content?.trim();
+
+    if (!raw) {
+      console.error('Empty Groq response');
+      return NextResponse.json(FALLBACK);
+    }
+
+    // Strip markdown fences if model ignored instructions
+    const cleaned = raw
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
+    // Extract JSON object even if model added text around it
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON object found in response:', cleaned);
+      return NextResponse.json(FALLBACK);
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    // Validate required fields — fall back to FALLBACK values for any missing
+    const result = {
+      spendingForecast: parsed.spendingForecast?.length === 3
+        ? parsed.spendingForecast
+        : FALLBACK.spendingForecast,
+      savingsForecast: parsed.savingsForecast?.length === 3
+        ? parsed.savingsForecast
+        : FALLBACK.savingsForecast,
+      topRisk: parsed.topRisk || FALLBACK.topRisk,
+      topOpportunity: parsed.topOpportunity || FALLBACK.topOpportunity,
+      projectedAnnualSavings: parsed.projectedAnnualSavings || FALLBACK.projectedAnnualSavings,
+      coachMessage: parsed.coachMessage || FALLBACK.coachMessage,
+    };
+
+    return NextResponse.json(result);
+
   } catch (err) {
-    console.error('Forecast error:', err);
-    return NextResponse.json({
-      spendingForecast: [
-        { month: 'Jun', amount: 760, reasoning: 'Slight reduction from better habits' },
-        { month: 'Jul', amount: 720, reasoning: 'Continued improvement in food spending' },
-        { month: 'Aug', amount: 700, reasoning: 'Consistent savings momentum' },
-      ],
-      savingsForecast: [
-        { month: 'Jun', amount: 185 },
-        { month: 'Jul', amount: 210 },
-        { month: 'Aug', amount: 230 },
-      ],
-      topRisk: 'Food spending remains the biggest risk at 35% of budget.',
-      topOpportunity: 'Reducing food by RM 80 would boost annual savings by RM 960.',
-      projectedAnnualSavings: 2340,
-      coachMessage: 'You\'re on a solid track, Harshini. Small cuts in food and transport could push your savings above RM 200/month by August.',
-    }, { status: 200 });
+    console.error('Forecast route error:', err);
+    return NextResponse.json(FALLBACK);
   }
 }
