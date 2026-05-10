@@ -29,18 +29,36 @@ function DonutChart({ data }) {
 }
 
 const SPENDING = [
-  { label: 'Food', value: 280, color: '#FF6B6B' },
+  { label: 'Food',      value: 280, color: '#FF6B6B' },
   { label: 'Transport', value: 160, color: '#4ECDC4' },
   { label: 'Groceries', value: 120, color: '#FFE66D' },
-  { label: 'Bills', value: 100, color: '#A8E6CF' },
-  { label: 'Squad', value: 55, color: '#6C63FF' },
+  { label: 'Bills',     value: 100, color: '#A8E6CF' },
+  { label: 'Squad',     value: 55,  color: '#6C63FF' },
 ];
 
+// Mini sparkline — just 4 points, compact
+function MiniSparkline({ data, color }) {
+  const W = 80, H = 28;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const toX = (i) => (i / (data.length - 1)) * W;
+  const toY = (v) => H - ((v - min) / (max - min || 1)) * (H - 4) - 2;
+  const path = data.map((v, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(v)}`).join(' ');
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H}>
+      <path d={path} fill="none" stroke={color} strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={toX(data.length - 1)} cy={toY(data[data.length - 1])}
+        r="3" fill={color} />
+    </svg>
+  );
+}
+
 const STATIC_TX = [
-  { emoji: '💸', desc: 'To Sha', date: 'Today', amount: -10 },
-  { emoji: '🍔', desc: "McDonald's Subang", date: 'May 7', amount: -12.5 },
-  { emoji: '🚗', desc: 'Grab to campus', date: 'May 7', amount: -8 },
-  { emoji: '💸', desc: 'From Ahmad', date: 'May 6', amount: 50 },
+  { emoji: '💸', desc: 'To Sha',           date: 'Today',  amount: -10   },
+  { emoji: '🍔', desc: "McDonald's Subang", date: 'May 7',  amount: -12.5 },
+  { emoji: '🚗', desc: 'Grab to campus',   date: 'May 7',  amount: -8    },
+  { emoji: '💸', desc: 'From Ahmad',        date: 'May 6',  amount: 50    },
 ];
 
 export default function DashboardPage() {
@@ -68,6 +86,7 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {/* Balance card */}
         <div style={{
           background: 'rgba(255,255,255,0.15)', borderRadius: 20,
           padding: 14, border: '1px solid rgba(255,255,255,0.2)',
@@ -76,9 +95,9 @@ export default function DashboardPage() {
           <p style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 10 }}>RM {totalBalance}</p>
           <div style={{ display: 'flex', gap: 14 }}>
             {[
-              { label: 'Savings', val: `RM ${balances.savings}`, icon: 'ti-trending-up', bg: 'rgba(0,200,150,0.25)', color: '#00C896' },
-              { label: 'Squad', val: `RM ${balances.squad}`, icon: 'ti-users', bg: 'rgba(156,143,255,0.25)', color: '#9C8FFF' },
-              { label: 'Main', val: `RM ${balances.main.toFixed(2)}`, icon: 'ti-wallet', bg: 'rgba(255,255,255,0.2)', color: '#fff' },
+              { label: 'Savings', val: `RM ${balances.savings}`, icon: 'ti-trending-up', bg: 'rgba(0,200,150,0.25)',   color: '#00C896' },
+              { label: 'Squad',   val: `RM ${balances.squad}`,   icon: 'ti-users',        bg: 'rgba(156,143,255,0.25)', color: '#9C8FFF' },
+              { label: 'Main',    val: `RM ${balances.main.toFixed(2)}`, icon: 'ti-wallet', bg: 'rgba(255,255,255,0.2)', color: '#fff' },
             ].map(({ label, val, icon, bg, color }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <div style={{
@@ -133,48 +152,89 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Spending Mirror card */}
-        <div style={{
-          background: '#fff', borderRadius: 16, margin: '0 14px 10px',
-          border: '0.5px solid #eef0f4', overflow: 'hidden',
-        }}>
+        {/* ── Spending Mirror card — tappable ── */}
+        <div
+          onClick={() => router.push('/mirror')}
+          style={{
+            background: '#fff', borderRadius: 16, margin: '0 14px 10px',
+            border: '0.5px solid #eef0f4', overflow: 'hidden', cursor: 'pointer',
+          }}
+        >
+          {/* Card header */}
           <div style={{
-            padding: '12px 14px', display: 'flex',
-            alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 14px 10px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>Your spending mirror</h3>
-            <span style={{
-              display: 'inline-flex', padding: '3px 9px', borderRadius: 20,
-              fontSize: 10, fontWeight: 600, background: '#EEEDFE', color: '#534AB7',
-            }}>May 2026</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8, background: '#EEEDFE',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <i className="ti ti-chart-donut" style={{ fontSize: 14, color: '#6C63FF' }} />
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>Spending Mirror</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                padding: '3px 9px', borderRadius: 20,
+                fontSize: 10, fontWeight: 600, background: '#EEEDFE', color: '#534AB7',
+              }}>May 2026</span>
+              <i className="ti ti-chevron-right" style={{ fontSize: 14, color: '#bbb' }} />
+            </div>
           </div>
-          <div style={{ padding: '0 14px 14px', display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ width: 90, height: 90, flexShrink: 0 }}>
+
+          {/* Compact donut + legend */}
+          <div style={{ padding: '0 14px 10px', display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ width: 72, height: 72, flexShrink: 0 }}>
               <DonutChart data={SPENDING} />
             </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {SPENDING.map((d) => (
                 <div key={d.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 11, color: '#666', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, marginRight: 5, flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: '#888', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, marginRight: 5, flexShrink: 0 }} />
                     {d.label}
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a2e' }}>RM {d.value}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: '#1a1a2e' }}>RM {d.value}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ borderTop: '0.5px solid #f2f2f2', padding: '10px 14px', display: 'flex', gap: 8 }}>
+
+          {/* Sparklines row — spending vs savings at a glance */}
+          <div style={{
+            borderTop: '0.5px solid #f2f2f2',
+            padding: '10px 14px',
+            display: 'flex', gap: 0,
+          }}>
             {[
-              { label: 'Total spent', val: 'RM 800' },
-              { label: 'Solo spending', val: 'RM 745' },
-              { label: 'Squad spending', val: 'RM 55', highlight: true },
-            ].map((s) => (
-              <div key={s.label} style={{ flex: 1, textAlign: 'center' }}>
-                <p style={{ fontSize: 10, color: '#aaa' }}>{s.label}</p>
-                <strong style={{ fontSize: 13, fontWeight: 700, color: s.highlight ? '#6C63FF' : '#1a1a2e', display: 'block' }}>{s.val}</strong>
+              { label: 'Spending trend',  data: [720, 850, 780, 800], color: '#6C63FF', suffix: '↑ vs Mar' },
+              { label: 'Savings trend',   data: [180, 120, 160, 145], color: '#00C896', suffix: '↓ vs Feb' },
+              { label: 'Squad spending',  data: [40,  50,  50,  55],  color: '#9C8FFF', suffix: '↑ steady' },
+            ].map((s, i) => (
+              <div key={s.label} style={{
+                flex: 1, textAlign: 'center',
+                borderRight: i < 2 ? '0.5px solid #f2f2f2' : 'none',
+                padding: '0 8px',
+              }}>
+                <p style={{ fontSize: 9, color: '#bbb', marginBottom: 4 }}>{s.label}</p>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 3 }}>
+                  <MiniSparkline data={s.data} color={s.color} />
+                </div>
+                <p style={{ fontSize: 9, color: s.color, fontWeight: 600 }}>{s.suffix}</p>
               </div>
             ))}
+          </div>
+
+          {/* CTA button */}
+          <div style={{
+            background: '#6C63FF',
+            padding: '11px 14px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}>
+            <i className="ti ti-chart-line" style={{ fontSize: 13, color: '#fff' }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>View full mirror & AI forecast</span>
+            <i className="ti ti-arrow-right" style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }} />
           </div>
         </div>
 
@@ -207,7 +267,7 @@ export default function DashboardPage() {
                 <p style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{tx.description || tx.desc}</p>
                 <span style={{ fontSize: 11, color: '#aaa' }}>{tx.date}</span>
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: (tx.amount > 0) ? '#00C896' : '#1a1a2e' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: tx.amount > 0 ? '#00C896' : '#1a1a2e' }}>
                 {tx.amount > 0 ? '+' : ''}RM {Math.abs(tx.amount).toFixed(2)}
               </span>
             </div>
