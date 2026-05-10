@@ -176,9 +176,9 @@ Balance & Goals
 
 | Name | Role |
 |---|---|
-| Harshini Kumara Vell | Lead Developer & AI Integration |
-| Lievaashini
-| Shahitya
+| Harshini | Lead Developer & AI Integration |
+| Lievaashini | Research & Strategy |
+| Shahitya | Product Strategist & Business Analyst
 
 Built for the **UTMx Hackathon 2026**
 
