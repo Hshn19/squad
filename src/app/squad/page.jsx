@@ -8,23 +8,27 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Users, Target, ChevronRight, Trophy } from "lucide-react";
-import { squadGoals, formatMYR } from "@/lib/mockData";
+import { formatMYR, currentUser } from "@/lib/mockData";
+import { useApp } from "@/lib/AppContext";
 
 export default function SquadPage() {
   const router = useRouter();
+  const { squadGoals, contributeToGoal } = useApp();
   const [activeGoal, setActiveGoal] = useState(null);
   const [contributeAmount, setContributeAmount] = useState("");
   const [contributed, setContributed] = useState(false);
 
   const handleContribute = () => {
-    if (!contributeAmount || parseFloat(contributeAmount) <= 0) return;
-    setContributed(true);
-    setTimeout(() => {
-      setContributed(false);
-      setActiveGoal(null);
-      setContributeAmount("");
-    }, 2000);
-  };
+  if (!contributeAmount || parseFloat(contributeAmount) <= 0) return;
+  const success = contributeToGoal(activeGoal.id, currentUser.name, contributeAmount);
+  if (!success) return;
+  setContributed(true);
+  setTimeout(() => {
+    setContributed(false);
+    setActiveGoal(null);
+    setContributeAmount("");
+  }, 2000);
+};
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F5F7]">
@@ -176,7 +180,7 @@ export default function SquadPage() {
 
       {/* ── Contribute modal ── */}
       {activeGoal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end justify-center" onClick={(e) => e.target === e.currentTarget && setActiveGoal(null)}>
           <div className="bg-white w-full max-w-md rounded-t-3xl p-6">
             {contributed ? (
               <div className="flex flex-col items-center py-6">

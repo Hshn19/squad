@@ -8,13 +8,15 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGroq } from "@/hooks/useGroq";
-import { contacts, balances, formatMYR } from "@/lib/mockData";
+import { contacts, formatMYR } from "@/lib/mockData";
+import { useApp } from "@/lib/AppContext";
 import { ArrowLeft, Mic, CheckCircle, ChevronDown } from "lucide-react";
 import { Suspense } from "react";
 
 function TransferContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { balances, doTransfer } = useApp();
 
   // ── Form state ───────────────────────────────────────────
   const [recipient, setRecipient] = useState("");
@@ -48,11 +50,13 @@ function TransferContent() {
 
   // ── Handle approve ───────────────────────────────────────
   const handleApprove = () => {
-    setStep("success");
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 2500);
-  };
+  const success = doTransfer(recipient, amount, note);
+  if (!success) return;
+  setStep("success");
+  setTimeout(() => {
+    router.push("/dashboard");
+  }, 2500);
+};
 
   // ── Success screen ───────────────────────────────────────
   if (step === "success") {

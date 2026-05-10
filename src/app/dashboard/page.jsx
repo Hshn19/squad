@@ -5,23 +5,20 @@
 
 "use client";
 
+
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Bell, ChevronRight, TrendingUp, TrendingDown, Wallet } from "lucide-react";
-import {
-  currentUser,
-  balances,
-  transactions,
-  spendingBreakdown,
-  aiTips,
-  savingsStreak,
-  formatMYR,
-} from "@/lib/mockData";
+import { currentUser, spendingBreakdown, formatMYR } from "@/lib/mockData";
+import { useApp } from "@/lib/AppContext";
+
 
 export default function Dashboard() {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(null);
+  const { balances, transactions, streak, aiTips } = useApp();
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F5F7]">
@@ -83,12 +80,12 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <div className="text-2xl">🔥</div>
             <div>
-              <p className="font-semibold text-gray-800 text-sm">{savingsStreak.currentStreak}-day saving streak!</p>
-              <p className="text-gray-400 text-xs">Saved {formatMYR(savingsStreak.thisWeekSaved)} this week</p>
+              <p className="font-semibold text-gray-800 text-sm">{streak.currentStreak}-day saving streak!</p>
+              <p className="text-gray-400 text-xs">Saved {formatMYR(streak.thisWeekSaved)} this week</p>
             </div>
           </div>
           <span className="text-xs bg-purple-100 text-purple-600 font-medium px-2 py-1 rounded-full">
-            Best: {savingsStreak.longestStreak} days
+            Best: {streak.longestStreak} days
           </span>
         </div>
 
@@ -164,7 +161,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-50">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-gray-800">Recent</h3>
-            <button className="text-xs text-[#6C63FF] font-medium">See all</button>
+            <button onClick={() => router.push("/transactions")} className="text-xs text-[#00C896] font-medium">See all</button>
           </div>
 
           <div className="space-y-3">
