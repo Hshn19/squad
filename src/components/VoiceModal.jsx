@@ -1,182 +1,364 @@
-// ============================================================
-// src/components/VoiceModal.jsx
-// Shows parsed voice action for user confirmation before executing
-// ============================================================
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import { useApp } from '@/lib/AppContext';
+import { useRouter } from 'next/navigation';
 
-"use client";
+const HINTS = [
+  '"Transfer RM20 to Ahmad"',
+  '"Go to mirror"',
+  '"I spent RM15 on food"',
+  '"What\'s my balance?"',
+  '"Go to transactions"',
+  '"Add RM50 to Tokyo trip"',
+  '"Go to Smart Find"',
+];
 
-import { formatMYR, currentUser } from "@/lib/mockData";
-import { Mic, X, Check } from "lucide-react";
+const NAV_KEYWORDS = {
+  mirror: '/mirror',
+  'spending mirror': '/mirror',
+  home: '/dashboard',
+  dashboard: '/dashboard',
+  squad: '/squad',
+  smartfind: '/smartfind',
+  'smart find': '/smartfind',
+  find: '/smartfind',
+  transactions: '/transactions',
+  history: '/transactions',
+};
 
-export default function VoiceModal({ action, onConfirm, onDismiss, status }) {
+export default function VoiceModal({ onClose }) {
+  const { doTransfer, addExpense, contributeToGoal, balances, showToast } = useApp();
+  const router = useRouter();
 
-  if (status === "listening") {
-    return (
-      <div className="fixed inset-0 bg-black/50 z-[90] flex items-end justify-center">
-        <div className="bg-white w-full max-w-md rounded-t-3xl p-8 flex flex-col items-center">
-          <div className="w-16 h-16 bg-[#00C896]/10 rounded-full flex items-center justify-center mb-4 animate-pulse">
-            <Mic size={28} className="text-[#00C896]" />
-          </div>
-          <p className="text-lg font-bold text-gray-800">Listening...</p>
-          <p className="text-sm text-gray-400 mt-1">Speak your command</p>
-          <div className="flex gap-1 mt-4">
-            {[0,1,2,3,4].map(i => (
-              <div
-                key={i}
-                className="w-1.5 bg-[#00C896] rounded-full animate-bounce"
-                style={{ height: `${12 + Math.random() * 20}px`, animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
-          </div>
-          <button onClick={onDismiss} className="mt-6 text-sm text-gray-400">Cancel</button>
-        </div>
-      </div>
-    );
+  const [phase, setPhase] = useState('idle');
+  const [transcript, setTranscript] = useState('');
+  const [parsedAction, setParsedAction] = useState(null);
+  const [hintIdx, setHintIdx] = useState(0);
+  const recognitionRef = useRef(null);
+  const gotResultRef = useRef(false);
+
+  useEffect(() => {
+    const t = setInterval(() => setHintIdx((i) => (i + 1) % HINTS.length), 2500);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    startListening();
+    return () => recognitionRef.current?.abort();
+  }, []);
+
+  function startListening() {
+    gotResultRef.current = false;
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      setPhase('error');
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SR();
+    rec.lang = 'en-MY';
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    recognitionRef.current = rec;
+
+    rec.onstart = () => setPhase('listening');
+
+    rec.onresult = (e) => {
+      gotResultRef.current = true;
+      const text = e.results[0][0].transcript;
+      setTranscript(text);
+      setPhase('processing');
+      parseIntent(text);
+    };
+
+    rec.onerror = () => {
+      gotResultRef.current = true;
+      setPhase('error');
+    };
+
+    rec.onend = () => {
+      if (!gotResultRef.current) setPhase('error');
+    };
+
+    rec.start();
   }
 
-  if (status === "thinking") {
-    return (
-      <div className="fixed inset-0 bg-black/50 z-[90] flex items-end justify-center">
-        <div className="bg-white w-full max-w-md rounded-t-3xl p-8 flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-[#00C896] border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-base font-semibold text-gray-700">Processing...</p>
-        </div>
-      </div>
-    );
+  async function parseIntent(text) {
+    const lower = text.toLowerCase();
+
+    // ── 1. Balance check (instant, no API) ──
+    if (lower.includes('balance') || lower.includes('savings') || lower.includes('how much')) {
+      showToast(`Main: RM ${balances.main.toFixed(2)} · Savings: RM ${balances.savings}`);
+      onClose();
+      return;
+    }
+
+    // ── 2. Transfer intent (regex, no API) ──
+    // Must come BEFORE nav keywords so "transfer" doesn't trigger navigation
+    const transferMatch =
+      lower.match(/(?:transfer|send|pay)\s+(?:rm\s*)?(\d+(?:\.\d+)?)\s+to\s+(\w+)/i) ||
+      lower.match(/(?:transfer|send|pay)\s+(?:rm\s*)?(\d+(?:\.\d+)?)\s+(\w+)/i);
+
+    if (transferMatch) {
+      const amount = transferMatch[1];
+      const recipient = transferMatch[2];
+      const recipientFormatted =
+        recipient.charAt(0).toUpperCase() + recipient.slice(1).toLowerCase();
+      const params = new URLSearchParams({
+        recipient: recipientFormatted,
+        amount,
+        note: '',
+      });
+      router.push(`/transfer?${params.toString()}`);
+      showToast(`Opening Transfer for ${recipientFormatted}`);
+      onClose();
+      return;
+    }
+
+    // ── 3. Navigation (instant, no API) ──
+    for (const [keyword, path] of Object.entries(NAV_KEYWORDS)) {
+      if (lower.includes(keyword)) {
+        router.push(path);
+        showToast(`Navigating to ${keyword}`);
+        onClose();
+        return;
+      }
+    }
+
+    // ── 4. Groq API for expense / squad / ambiguous ──
+    try {
+      const res = await fetch('/api/parse-voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: text }),
+      });
+      const data = await res.json();
+      const action = data.action;
+
+      if (!action || action.type === 'unknown') {
+        setPhase('error');
+        return;
+      }
+
+      if (action.type === 'navigate') {
+        const path = NAV_KEYWORDS[action.page?.toLowerCase()] || '/dashboard';
+        router.push(path);
+        showToast(`Navigating to ${action.page}`);
+        onClose();
+        return;
+      }
+
+      if (action.type === 'check_balance') {
+        showToast(`Main: RM ${balances.main.toFixed(2)} · Savings: RM ${balances.savings}`);
+        onClose();
+        return;
+      }
+
+      // Groq caught a transfer the regex missed (e.g. unusual phrasing)
+      if (action.type === 'transfer') {
+        const recipientFormatted = action.recipient
+          ? action.recipient.charAt(0).toUpperCase() + action.recipient.slice(1).toLowerCase()
+          : '';
+        const params = new URLSearchParams({
+          recipient: recipientFormatted,
+          amount: action.amount?.toString() || '',
+          note: action.note || '',
+        });
+        router.push(`/transfer?${params.toString()}`);
+        showToast(`Opening Transfer for ${recipientFormatted}`);
+        onClose();
+        return;
+      }
+
+      // Expense + squad → confirmation modal
+      setParsedAction(action);
+      setPhase('confirm');
+    } catch {
+      setPhase('error');
+    }
   }
 
-  if (status === "done" && action) {
-    return (
-      <div className="fixed inset-0 bg-black/50 z-[90] flex items-end justify-center">
-        <div className="bg-white w-full max-w-md rounded-t-3xl p-6">
-          <div className="flex items-center justify-between mb-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Voice Command Detected</p>
-            <button onClick={onDismiss}>
-              <X size={18} className="text-gray-400" />
-            </button>
-          </div>
-
-          {/* ── Transfer ── */}
-          {action.action === "transfer" && (
-            <ActionCard
-              icon="💸"
-              label="Transfer Money"
-              color="#00C896"
-              rows={[
-                { label: "To",     value: action.recipient },
-                { label: "Amount", value: formatMYR(action.amount) },
-                { label: "Note",   value: action.note || "—" },
-              ]}
-            />
-          )}
-
-          {/* ── Add expense ── */}
-          {action.action === "add_expense" && (
-            <ActionCard
-              icon="🧾"
-              label="Log Expense"
-              color="#FF6B35"
-              rows={[
-                { label: "Amount",      value: formatMYR(action.amount) },
-                { label: "Category",    value: action.category },
-                { label: "Description", value: action.description || "—" },
-              ]}
-            />
-          )}
-
-          {/* ── Squad contribute ── */}
-          {action.action === "squad_contribute" && (
-            <ActionCard
-              icon="🎯"
-              label="Squad Contribution"
-              color="#6C63FF"
-              rows={[
-                { label: "Goal",   value: action.goal_name },
-                { label: "Amount", value: formatMYR(action.amount) },
-              ]}
-            />
-          )}
-
-          {/* ── Check balance ── */}
-          {action.action === "check_balance" && (
-            <ActionCard
-              icon="💰"
-              label="Check Balance"
-              color="#00C896"
-              rows={[
-                { label: "Account", value: action.account },
-              ]}
-            />
-          )}
-
-          {/* ── Navigate ── */}
-          {action.action === "navigate" && (
-            <ActionCard
-              icon="🗺️"
-              label="Navigate To"
-              color="#00C896"
-              rows={[
-                { label: "Page", value: action.page },
-              ]}
-            />
-          )}
-
-          {/* ── Unknown ── */}
-          {action.action === "unknown" && (
-            <div className="bg-red-50 rounded-2xl p-4 text-center">
-              <p className="text-2xl mb-2">🤔</p>
-              <p className="text-sm font-semibold text-red-600">Couldn't understand that</p>
-              <p className="text-xs text-red-400 mt-1">Try again with a clearer command</p>
-            </div>
-          )}
-
-          {/* ── Buttons ── */}
-          {action.action !== "unknown" && (
-            <div className="flex gap-3 mt-5">
-              <button
-                onClick={onDismiss}
-                className="flex-1 py-3 rounded-2xl border border-gray-200 text-sm font-semibold text-gray-500"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => onConfirm(action)}
-                className="flex-1 py-3 rounded-2xl bg-[#00C896] text-white text-sm font-semibold flex items-center justify-center gap-2"
-              >
-                <Check size={16} /> Confirm
-              </button>
-            </div>
-          )}
-
-          {action.action === "unknown" && (
-            <button
-              onClick={onDismiss}
-              className="w-full mt-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold text-gray-500"
-            >
-              Dismiss
-            </button>
-          )}
-        </div>
-      </div>
-    );
+  function executeAction() {
+    if (!parsedAction) return;
+    const a = parsedAction;
+    if (a.type === 'add_expense') {
+      addExpense(a.amount, a.category || 'Other', a.description || 'Expense');
+      showToast(`✓ Logged RM ${a.amount} · ${a.category}`);
+    } else if (a.type === 'squad_contribute') {
+      contributeToGoal(a.goalId || 'tokyo', 'Harshini', a.amount);
+      showToast(`✓ Added RM ${a.amount} to ${a.goal}`);
+    }
+    onClose();
   }
 
-  return null;
-}
+  function confirmLabel(a) {
+    if (a.type === 'add_expense') return `Log RM ${a.amount} expense · ${a.category || 'Other'}`;
+    if (a.type === 'squad_contribute') return `Add RM ${a.amount} to ${a.goal || 'squad goal'}`;
+    return 'Execute action';
+  }
 
-function ActionCard({ icon, label, color, rows }) {
   return (
-    <div className="bg-gray-50 rounded-2xl p-4 mb-2">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xl">{icon}</span>
-        <span className="text-sm font-bold" style={{ color }}>{label}</span>
+    <div
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(26,26,46,0.72)',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        zIndex: 500, backdropFilter: 'blur(4px)',
+      }}
+    >
+      <div style={{
+        background: '#fff', borderRadius: '24px 24px 0 0',
+        padding: '28px 20px 44px', width: '100%', maxWidth: 480,
+        animation: 'slideUp .25s ease',
+      }}>
+
+        {/* ── IDLE / LISTENING ── */}
+        {(phase === 'idle' || phase === 'listening') && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e' }}>
+                {phase === 'idle' ? 'Starting mic…' : 'Listening…'}
+              </p>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: '#bbb', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+              <div style={{
+                width: 76, height: 76, borderRadius: '50%',
+                background: phase === 'listening' ? '#00C896' : '#e0e0e0',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: phase === 'listening'
+                  ? '0 0 0 18px rgba(0,200,150,0.12), 0 0 0 36px rgba(0,200,150,0.05)'
+                  : 'none',
+                animation: phase === 'listening' ? 'pulse 1.6s ease infinite' : 'none',
+                transition: 'background .3s',
+              }}>
+                <i className="ti ti-microphone" style={{ fontSize: 30, color: '#fff' }} />
+              </div>
+            </div>
+
+            <p style={{ textAlign: 'center', fontSize: 12, color: '#bbb', marginBottom: 6 }}>Try saying</p>
+            <p style={{ textAlign: 'center', fontSize: 14, fontWeight: 500, color: '#6C63FF', minHeight: 22 }}>
+              {HINTS[hintIdx]}
+            </p>
+          </>
+        )}
+
+        {/* ── PROCESSING ── */}
+        {phase === 'processing' && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e' }}>Got it, thinking…</p>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: '#bbb', cursor: 'pointer' }}>✕</button>
+            </div>
+            <div style={{
+              background: '#EEEDFE', borderRadius: 12,
+              padding: '12px 14px', marginBottom: 20,
+              fontSize: 14, color: '#534AB7', fontStyle: 'italic',
+            }}>
+              "{transcript}"
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#aaa', fontSize: 13 }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: '50%',
+                border: '2.5px solid #6C63FF', borderTopColor: 'transparent',
+                animation: 'spin .7s linear infinite', flexShrink: 0,
+              }} />
+              Parsing with AI…
+            </div>
+          </>
+        )}
+
+        {/* ── CONFIRM ── */}
+        {phase === 'confirm' && parsedAction && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e' }}>Confirm action</p>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: '#bbb', cursor: 'pointer' }}>✕</button>
+            </div>
+            <div style={{
+              background: '#f7f7fb', borderRadius: 12,
+              padding: '10px 14px', marginBottom: 8,
+              fontSize: 12, color: '#888', fontStyle: 'italic',
+            }}>
+              You said: "{transcript}"
+            </div>
+            <div style={{
+              background: '#F8F9FB', borderRadius: 14,
+              padding: 18, border: '0.5px solid #eef0f4', marginBottom: 24,
+            }}>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#1a1a2e' }}>{confirmLabel(parsedAction)}</p>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={onClose}
+                style={{
+                  flex: 1, padding: 14, borderRadius: 14,
+                  border: '0.5px solid #e0e0e8', background: '#fff',
+                  fontSize: 14, fontWeight: 600, color: '#888',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >Cancel</button>
+              <button
+                onClick={executeAction}
+                style={{
+                  flex: 2, padding: 14, borderRadius: 14,
+                  border: 'none', background: '#6C63FF',
+                  fontSize: 14, fontWeight: 700, color: '#fff',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >Confirm</button>
+            </div>
+          </>
+        )}
+
+        {/* ── ERROR ── */}
+        {phase === 'error' && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e' }}>Couldn't understand</p>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: '#bbb', cursor: 'pointer' }}>✕</button>
+            </div>
+            <p style={{ fontSize: 13, color: '#aaa', marginBottom: 24, lineHeight: 1.6 }}>
+              Make sure your mic is allowed in Chrome, then try again. Say something like "Transfer RM20 to Ahmad" or "Go to mirror".
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={onClose}
+                style={{
+                  flex: 1, padding: 14, borderRadius: 14,
+                  border: '0.5px solid #e0e0e8', background: '#fff',
+                  fontSize: 14, fontWeight: 600, color: '#888',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >Dismiss</button>
+              <button
+                onClick={() => { setPhase('idle'); startListening(); }}
+                style={{
+                  flex: 2, padding: 14, borderRadius: 14,
+                  border: 'none', background: '#6C63FF',
+                  fontSize: 14, fontWeight: 700, color: '#fff',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >Try again</button>
+            </div>
+          </>
+        )}
+
       </div>
-      {rows.map(({ label, value }) => (
-        <div key={label} className="flex justify-between py-1.5 border-b border-gray-100 last:border-0">
-          <span className="text-xs text-gray-400">{label}</span>
-          <span className="text-xs font-semibold text-gray-800 capitalize">{value}</span>
-        </div>
-      ))}
+
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+        @keyframes pulse {
+          0%,100% { box-shadow: 0 0 0 18px rgba(0,200,150,0.12), 0 0 0 36px rgba(0,200,150,0.05); }
+          50%      { box-shadow: 0 0 0 24px rgba(0,200,150,0.18), 0 0 0 48px rgba(0,200,150,0.07); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }

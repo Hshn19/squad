@@ -1,187 +1,217 @@
-// ============================================================
-// src/app/dashboard/page.jsx
-// Main dashboard — balance, spending breakdown, recent transactions, AI tips
-// ============================================================
+'use client';
+import { useApp } from '@/lib/AppContext';
+import { useRouter } from 'next/navigation';
 
-"use client";
+function DonutChart({ data }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const r = 35, cx = 45, cy = 45;
+  const circ = 2 * Math.PI * r;
+  let offsetAcc = 0;
+  const slices = data.map((d) => {
+    const dash = (d.value / total) * circ;
+    const slice = { ...d, dash, offset: offsetAcc };
+    offsetAcc += dash;
+    return slice;
+  });
+  return (
+    <svg viewBox="0 0 90 90" width="100%" height="100%">
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f0f0f0" strokeWidth="14" />
+      {slices.map((s, i) => (
+        <circle key={i} cx={cx} cy={cy} r={r} fill="none"
+          stroke={s.color} strokeWidth="14"
+          strokeDasharray={`${s.dash} ${circ - s.dash}`}
+          strokeDashoffset={-s.offset}
+          transform={`rotate(-90 ${cx} ${cy})`}
+        />
+      ))}
+    </svg>
+  );
+}
 
+const SPENDING = [
+  { label: 'Food', value: 280, color: '#FF6B6B' },
+  { label: 'Transport', value: 160, color: '#4ECDC4' },
+  { label: 'Groceries', value: 120, color: '#FFE66D' },
+  { label: 'Bills', value: 100, color: '#A8E6CF' },
+  { label: 'Squad', value: 55, color: '#6C63FF' },
+];
 
+const STATIC_TX = [
+  { emoji: '💸', desc: 'To Sha', date: 'Today', amount: -10 },
+  { emoji: '🍔', desc: "McDonald's Subang", date: 'May 7', amount: -12.5 },
+  { emoji: '🚗', desc: 'Grab to campus', date: 'May 7', amount: -8 },
+  { emoji: '💸', desc: 'From Ahmad', date: 'May 6', amount: 50 },
+];
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { Bell, ChevronRight, TrendingUp, TrendingDown, Wallet } from "lucide-react";
-import { currentUser, spendingBreakdown, formatMYR } from "@/lib/mockData";
-import { useApp } from "@/lib/AppContext";
-
-
-export default function Dashboard() {
+export default function DashboardPage() {
+  const { balances, transactions } = useApp();
   const router = useRouter();
-  const [activeIndex, setActiveIndex] = useState(null);
-  const { balances, transactions, streak, aiTips } = useApp();
+  const totalBalance = (balances.main + balances.savings + balances.squad).toFixed(2);
+  const recentTx = transactions.length > 0 ? transactions.slice(0, 4) : null;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F5F5F7]">
-      {/* ── Header ── */}
-      <div className="bg-[#6C63FF] px-5 pt-12 pb-20 rounded-b-[2.5rem]">
-        <div className="flex items-center justify-between mb-6">
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+
+      {/* ── Purple header ── */}
+      <div style={{ background: '#6C63FF', padding: '48px 20px 52px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div>
-            <p className="text-purple-200 text-sm">Good morning,</p>
-            <h1 className="text-white text-2xl font-bold">{currentUser.name} 👋</h1>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>Good morning,</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Harshini 👋</h1>
           </div>
-          <button className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-            <Bell size={18} className="text-white" />
+          <button style={{
+            width: 38, height: 38, background: 'rgba(255,255,255,0.2)',
+            border: 'none', borderRadius: '50%', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+          }}>
+            <i className="ti ti-bell" style={{ fontSize: 18, color: '#fff' }} />
           </button>
         </div>
 
-        {/* ── Balance card ── */}
-        <div className="bg-white/15 backdrop-blur rounded-2xl p-4 border border-white/20">
-          <p className="text-purple-200 text-xs mb-1">Total Balance</p>
-          <h2 className="text-white text-3xl font-bold mb-3">
-            {formatMYR(balances.main + balances.savings)}
-          </h2>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 bg-green-400/30 rounded-full flex items-center justify-center">
-                <TrendingUp size={14} className="text-green-300" />
+        <div style={{
+          background: 'rgba(255,255,255,0.15)', borderRadius: 20,
+          padding: 14, border: '1px solid rgba(255,255,255,0.2)',
+        }}>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginBottom: 2 }}>Total Balance</p>
+          <p style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 10 }}>RM {totalBalance}</p>
+          <div style={{ display: 'flex', gap: 14 }}>
+            {[
+              { label: 'Savings', val: `RM ${balances.savings}`, icon: 'ti-trending-up', bg: 'rgba(0,200,150,0.25)', color: '#00C896' },
+              { label: 'Squad', val: `RM ${balances.squad}`, icon: 'ti-users', bg: 'rgba(156,143,255,0.25)', color: '#9C8FFF' },
+              { label: 'Main', val: `RM ${balances.main.toFixed(2)}`, icon: 'ti-wallet', bg: 'rgba(255,255,255,0.2)', color: '#fff' },
+            ].map(({ label, val, icon, bg, color }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', background: bg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <i className={`ti ${icon}`} style={{ fontSize: 13, color }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)' }}>{label}</p>
+                  <strong style={{ fontSize: 12, color: '#fff', display: 'block' }}>{val}</strong>
+                </div>
               </div>
-              <div>
-                <p className="text-purple-200 text-[10px]">Savings</p>
-                <p className="text-white text-sm font-semibold">{formatMYR(balances.savings)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 bg-red-400/30 rounded-full flex items-center justify-center">
-                <TrendingDown size={14} className="text-red-300" />
-              </div>
-              <div>
-                <p className="text-purple-200 text-[10px]">Squad</p>
-                <p className="text-white text-sm font-semibold">{formatMYR(balances.squad)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 bg-blue-400/30 rounded-full flex items-center justify-center">
-                <Wallet size={14} className="text-blue-300" />
-              </div>
-              <div>
-                <p className="text-purple-200 text-[10px]">Main</p>
-                <p className="text-white text-sm font-semibold">{formatMYR(balances.main)}</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div className="px-4 -mt-6 space-y-4 pb-4">
+      {/* ── Body ── */}
+      <div style={{ marginTop: -20 }}>
 
-        {/* ── Savings streak ── */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">🔥</div>
+        {/* Streak */}
+        <div style={{
+          background: '#fff', borderRadius: 16, margin: '0 14px 10px',
+          padding: '12px 14px', display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', border: '0.5px solid #eef0f4',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 24 }}>🔥</span>
             <div>
-              <p className="font-semibold text-gray-800 text-sm">{streak.currentStreak}-day saving streak!</p>
-              <p className="text-gray-400 text-xs">Saved {formatMYR(streak.thisWeekSaved)} this week</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>12-day saving streak!</p>
+              <span style={{ fontSize: 11, color: '#aaa' }}>Saved RM 45.00 this week</span>
             </div>
           </div>
-          <span className="text-xs bg-purple-100 text-purple-600 font-medium px-2 py-1 rounded-full">
-            Best: {streak.longestStreak} days
-          </span>
+          <span style={{
+            display: 'inline-flex', padding: '3px 9px', borderRadius: 20,
+            fontSize: 10, fontWeight: 600, background: '#EEEDFE', color: '#534AB7',
+          }}>Best: 21 days</span>
         </div>
 
-        {/* ── AI tip ── */}
-        <div className="bg-gradient-to-r from-[#6C63FF] to-[#9C8FFF] rounded-2xl p-4 shadow-sm">
-          <p className="text-white/70 text-[10px] font-medium uppercase tracking-wide mb-1">AI Coach</p>
-          <p className="text-white text-sm leading-relaxed">{aiTips[0].message}</p>
+        {/* AI Coach */}
+        <div style={{
+          background: 'linear-gradient(135deg,#6C63FF,#9C8FFF)',
+          borderRadius: 16, margin: '0 14px 10px', padding: 14,
+        }}>
+          <p style={{
+            fontSize: 9, fontWeight: 700, letterSpacing: '.8px',
+            color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4,
+          }}>AI Coach</p>
+          <p style={{ fontSize: 12, color: '#fff', lineHeight: 1.6 }}>
+            You've spent RM 280 on food this month — 35% of your budget. Your Squad pooled RM 300 for Smart Find. Try cooking 2× a week to save ~RM 60.
+          </p>
         </div>
 
-        {/* ── Spending breakdown ── */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-50">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-800">This Month</h3>
-            <button
-              onClick={() => router.push("/mirror")}
-              className="text-xs text-[#6C63FF] font-medium flex items-center gap-0.5"
-            >
-              View mirror <ChevronRight size={14} />
-            </button>
+        {/* Spending Mirror card */}
+        <div style={{
+          background: '#fff', borderRadius: 16, margin: '0 14px 10px',
+          border: '0.5px solid #eef0f4', overflow: 'hidden',
+        }}>
+          <div style={{
+            padding: '12px 14px', display: 'flex',
+            alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>Your spending mirror</h3>
+            <span style={{
+              display: 'inline-flex', padding: '3px 9px', borderRadius: 20,
+              fontSize: 10, fontWeight: 600, background: '#EEEDFE', color: '#534AB7',
+            }}>May 2026</span>
           </div>
-
-          <div className="flex items-center gap-4">
-            {/* Pie chart */}
-            <div className="w-32 h-32">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={spendingBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={35}
-                    outerRadius={55}
-                    paddingAngle={3}
-                    dataKey="amount"
-                    onMouseEnter={(_, index) => setActiveIndex(index)}
-                    onMouseLeave={() => setActiveIndex(null)}
-                  >
-                    {spendingBreakdown.map((entry, index) => (
-                      <Cell
-                        key={entry.category}
-                        fill={entry.color}
-                        opacity={activeIndex === null || activeIndex === index ? 1 : 0.5}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [`RM ${value}`, ""]}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+          <div style={{ padding: '0 14px 14px', display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ width: 90, height: 90, flexShrink: 0 }}>
+              <DonutChart data={SPENDING} />
             </div>
-
-            {/* Legend */}
-            <div className="flex-1 space-y-1.5">
-              {spendingBreakdown.map((item) => (
-                <div key={item.category} className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="text-xs text-gray-600">{item.category}</span>
-                  </div>
-                  <span className="text-xs font-medium text-gray-800">RM {item.amount}</span>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {SPENDING.map((d) => (
+                <div key={d.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 11, color: '#666', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, marginRight: 5, flexShrink: 0 }} />
+                    {d.label}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#1a1a2e' }}>RM {d.value}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-
-        {/* ── Recent transactions ── */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-50">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-800">Recent</h3>
-            <button onClick={() => router.push("/transactions")} className="text-xs text-[#00C896] font-medium">See all</button>
-          </div>
-
-          <div className="space-y-3">
-            {transactions.slice(0, 5).map((tx) => (
-              <div key={tx.id} className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gray-50 rounded-full flex items-center justify-center text-base flex-shrink-0">
-                  {tx.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{tx.description}</p>
-                  <p className="text-xs text-gray-400">{tx.date}</p>
-                </div>
-                <span className={`text-sm font-semibold flex-shrink-0 ${
-                  tx.amount > 0 ? "text-green-500" : "text-gray-800"
-                }`}>
-                  {tx.amount > 0 ? "+" : ""}{formatMYR(tx.amount)}
-                </span>
+          <div style={{ borderTop: '0.5px solid #f2f2f2', padding: '10px 14px', display: 'flex', gap: 8 }}>
+            {[
+              { label: 'Total spent', val: 'RM 800' },
+              { label: 'Solo spending', val: 'RM 745' },
+              { label: 'Squad spending', val: 'RM 55', highlight: true },
+            ].map((s) => (
+              <div key={s.label} style={{ flex: 1, textAlign: 'center' }}>
+                <p style={{ fontSize: 10, color: '#aaa' }}>{s.label}</p>
+                <strong style={{ fontSize: 13, fontWeight: 700, color: s.highlight ? '#6C63FF' : '#1a1a2e', display: 'block' }}>{s.val}</strong>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Recent Transactions */}
+        <div style={{
+          background: '#fff', borderRadius: 16,
+          border: '0.5px solid #eef0f4', margin: '0 14px 10px', padding: 14,
+        }}>
+          <div style={{
+            fontSize: 13, fontWeight: 600, color: '#1a1a2e',
+            marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span>Recent</span>
+            <span
+              onClick={() => router.push('/transactions')}
+              style={{ fontSize: 11, color: '#6C63FF', fontWeight: 500, cursor: 'pointer' }}
+            >See all</span>
+          </div>
+          {(recentTx || STATIC_TX).map((tx, i, arr) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '7px 0', borderBottom: i < arr.length - 1 ? '0.5px solid #f7f7f7' : 'none',
+            }}>
+              <div style={{
+                width: 36, height: 36, background: '#f7f7f9', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, flexShrink: 0,
+              }}>{tx.emoji || '💸'}</div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{tx.description || tx.desc}</p>
+                <span style={{ fontSize: 11, color: '#aaa' }}>{tx.date}</span>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 600, color: (tx.amount > 0) ? '#00C896' : '#1a1a2e' }}>
+                {tx.amount > 0 ? '+' : ''}RM {Math.abs(tx.amount).toFixed(2)}
+              </span>
+            </div>
+          ))}
         </div>
 
       </div>

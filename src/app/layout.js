@@ -1,35 +1,37 @@
-// ============================================================
-// src/app/layout.jsx
-// Root layout — wraps every page with global state + bottom nav
-// ============================================================
-
-import { Geist } from "next/font/google";
-import "./globals.css";
-import BottomNav from "@/components/BottomNav";
-import { AppProvider } from "@/lib/AppContext";
-
-const geist = Geist({ subsets: ["latin"] });
+import './globals.css';
+import { AppProvider } from '@/lib/AppContext';
+import BottomNav from '@/components/BottomNav';
 
 export const metadata = {
-  title: "FinWise",
-  description: "Smart finance for Malaysian youth",
+  title: 'FinWise',
+  description: 'Smart budgeting for Malaysian youth',
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geist.className} bg-[#F8F9FB] min-h-screen`}>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"
+        />
+      </head>
+      <body>
         <AppProvider>
-          {/* ── Page content ── */}
-          <main className="max-w-md mx-auto min-h-screen bg-[#F8F9FB] relative pb-24">
-            {children}
-          </main>
-
-          {/* ── Bottom navigation ── */}
-          <div className="fixed bottom-0 left-0 right-0 flex justify-center z-50">
-            <div className="w-full max-w-md">
-              <BottomNav />
-            </div>
+          <div style={{
+            display: 'flex', flexDirection: 'column',
+            minHeight: '100vh', paddingBottom: 80,
+            background: '#F8F9FB',
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+          }}>
+            <main style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+              {children}
+            </main>
+            <BottomNav />
           </div>
         </AppProvider>
       </body>

@@ -19,7 +19,7 @@ TRANSFER MONEY:
 
 NAVIGATE TO PAGE:
 {"action":"navigate","page":"dashboard","confidence":0.95}
-Valid pages: "dashboard", "savings", "squad", "mirror", "transfer", "profile"
+Valid pages: "dashboard", "savings", "transfer", "mirror", "squad", "smartfind"
 
 ADD EXPENSE:
 {"action":"add_expense","amount":12.50,"category":"food","description":"lunch","confidence":0.95}
