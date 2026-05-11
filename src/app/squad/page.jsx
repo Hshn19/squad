@@ -2,21 +2,23 @@
 import { useState } from 'react';
 import { useApp } from '@/lib/AppContext';
 
-const GOAL_COLORS = ['#6C63FF', '#00C896', '#F8B500', '#FF6B6B', '#4ECDC4', '#9C8FFF'];
+const GOAL_COLORS = ['#6a3de8', '#00C896', '#F8B500', '#FF6B6B', '#4ECDC4', '#9C8FFF'];
 const GOAL_EMOJIS = ['🎯', '✈️', '💻', '🏠', '🎓', '🎮', '🍕', '💍', '🚗', '🌴'];
 
 export default function SquadPage() {
   const { squadGoals, contributeToGoal, addSquadGoal, showToast } = useApp();
-  const [activeGoal, setActiveGoal] = useState(null);
-  const [contributeAmount, setContributeAmount] = useState('');
-  const [contributed, setContributed] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // New goal form state
-  const [newName, setNewName] = useState('');
+  const [activeGoal,       setActiveGoal]       = useState(null);
+  const [contributeAmount, setContributeAmount] = useState('');
+  const [contributed,      setContributed]      = useState(false);
+  const [showCreateModal,  setShowCreateModal]  = useState(false);
+
+  const [newName,   setNewName]   = useState('');
   const [newTarget, setNewTarget] = useState('');
-  const [newEmoji, setNewEmoji] = useState('🎯');
-  const [newColor, setNewColor] = useState('#6C63FF');
+  const [newEmoji,  setNewEmoji]  = useState('🎯');
+  const [newColor,  setNewColor]  = useState('#6a3de8');
+
+  const totalSaved = squadGoals.reduce((s, g) => s + g.current, 0);
 
   const handleContribute = () => {
     const amt = parseFloat(contributeAmount);
@@ -38,18 +40,13 @@ export default function SquadPage() {
     addSquadGoal({ name: newName.trim(), target: newTarget, emoji: newEmoji, color: newColor });
     showToast(`✓ "${newName}" goal created!`);
     setShowCreateModal(false);
-    setNewName('');
-    setNewTarget('');
-    setNewEmoji('🎯');
-    setNewColor('#6C63FF');
+    setNewName(''); setNewTarget(''); setNewEmoji('🎯'); setNewColor('#6a3de8');
   };
-
-  const totalSaved = squadGoals.reduce((s, g) => s + g.current, 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
-      {/* Purple header */}
+      {/* Header */}
       <div style={{ background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', padding: '48px 20px 56px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div>
@@ -59,25 +56,25 @@ export default function SquadPage() {
           <button
             onClick={() => setShowCreateModal(true)}
             style={{
-              width: 34, height: 34, background: 'rgba(255,255,255,0.2)',
-              border: 'none', borderRadius: '50%', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              width: 34, height: 34, background: 'rgba(255,255,255,0.15)',
+              border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
             }}
           >
             <i className="ti ti-plus" style={{ fontSize: 16, color: '#fff' }} />
           </button>
         </div>
         <div style={{
-          background: 'rgba(255,255,255,0.15)', borderRadius: 14,
-          padding: '12px 14px', border: '1px solid rgba(255,255,255,0.2)',
+          background: 'rgba(255,255,255,0.12)', borderRadius: 14,
+          padding: '12px 14px', border: '1px solid rgba(255,255,255,0.15)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div>
-            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginBottom: 2 }}>Total across all goals</p>
+            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Total across all goals</p>
             <p style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>RM {totalSaved.toLocaleString()}</p>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', marginBottom: 2 }}>Active goals</p>
+            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Active goals</p>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#A8F0D8' }}>{squadGoals.length}</p>
           </div>
         </div>
@@ -85,21 +82,43 @@ export default function SquadPage() {
 
       {/* Goals list */}
       <div style={{ marginTop: -28 }}>
+        {squadGoals.length === 0 && (
+          <div style={{
+            margin: '0 14px 10px', background: '#fff', borderRadius: 18,
+            padding: 32, textAlign: 'center', border: '0.5px solid #eef0f4',
+          }}>
+            <p style={{ fontSize: 28, marginBottom: 8 }}>🎯</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#1a1a2e', marginBottom: 4 }}>No goals yet</p>
+            <p style={{ fontSize: 12, color: '#aaa', marginBottom: 16 }}>Create a goal or book a deal from Smart Find</p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              style={{
+                padding: '10px 20px', borderRadius: 12, border: 'none',
+                background: 'linear-gradient(135deg, #6a3de8, #3d1f8a)',
+                color: '#fff', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >Create first goal</button>
+          </div>
+        )}
+
         {squadGoals.map((goal) => {
-          const progress = Math.min((goal.current / goal.target) * 100, 100);
+          const progress  = Math.min((goal.current / goal.target) * 100, 100);
           const remaining = goal.target - goal.current;
+
           return (
             <div key={goal.id} style={{
               background: '#fff', borderRadius: 18,
               margin: '0 14px 10px', border: '0.5px solid #eef0f4', overflow: 'hidden',
             }}>
               <div style={{ padding: 14 }}>
+                {/* Goal header */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{
-                      width: 42, height: 42, borderRadius: 12,
-                      background: goal.color + '22',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
+                      width: 44, height: 44, borderRadius: 12,
+                      background: goal.color + '18',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
                     }}>{goal.emoji}</div>
                     <div>
                       <p style={{ fontSize: 14, fontWeight: 700, color: '#1a1a2e' }}>{goal.name}</p>
@@ -116,7 +135,11 @@ export default function SquadPage() {
 
                 {/* Progress bar */}
                 <div style={{ height: 6, background: '#f0f0f0', borderRadius: 3, marginBottom: 12 }}>
-                  <div style={{ height: '100%', borderRadius: 3, background: goal.color, width: `${progress}%`, transition: 'width .4s' }} />
+                  <div style={{
+                    height: '100%', borderRadius: 3,
+                    background: `linear-gradient(90deg, ${goal.color}, ${goal.color}99)`,
+                    width: `${progress}%`, transition: 'width .5s ease',
+                  }} />
                 </div>
 
                 {/* Members */}
@@ -132,18 +155,40 @@ export default function SquadPage() {
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
                           <span style={{ fontSize: 12, fontWeight: 500, color: '#1a1a2e' }}>{member.name}</span>
-                          <span style={{ fontSize: 11, color: '#aaa' }}>RM {member.contributed} / RM {member.target}</span>
+                          <span style={{ fontSize: 11, color: '#aaa' }}>
+                            RM {member.contributed} / RM {member.target}
+                          </span>
                         </div>
                         <div style={{ height: 4, background: '#f0f0f0', borderRadius: 2 }}>
-                          <div style={{ height: '100%', borderRadius: 2, background: member.color, width: `${mp}%` }} />
+                          <div style={{
+                            height: '100%', borderRadius: 2,
+                            background: member.color, width: `${mp}%`,
+                            transition: 'width .4s',
+                          }} />
                         </div>
                       </div>
-                      {member.contributed >= member.target && <span style={{ fontSize: 12 }}>✓</span>}
+                      {member.contributed >= member.target && (
+                        <span style={{ fontSize: 14, color: '#00C896' }}>✓</span>
+                      )}
                     </div>
                   );
                 })}
+
+                {/* Completion badge */}
+                {progress >= 100 && (
+                  <div style={{
+                    background: 'rgba(0,200,150,0.1)', borderRadius: 10,
+                    padding: '8px 12px', marginTop: 4,
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    border: '0.5px solid rgba(0,200,150,0.3)',
+                  }}>
+                    <span style={{ fontSize: 16 }}>🎉</span>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: '#00C896' }}>Goal reached! Time to celebrate.</p>
+                  </div>
+                )}
               </div>
 
+              {/* Contribute button */}
               <button
                 onClick={() => setActiveGoal(goal)}
                 style={{
@@ -152,7 +197,8 @@ export default function SquadPage() {
                   background: 'none', border: 'none',
                   borderTop: '0.5px solid #f2f2f2',
                   fontSize: 13, fontWeight: 600, color: '#6a3de8',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}
               >
                 <i className="ti ti-plus" style={{ fontSize: 14 }} /> Contribute
@@ -161,23 +207,25 @@ export default function SquadPage() {
           );
         })}
 
-        {/* New goal button */}
+        {/* New goal CTA */}
         <div
           onClick={() => setShowCreateModal(true)}
           style={{
             margin: '0 14px 10px', background: '#fff', borderRadius: 18,
-            border: '2px dashed #e0e0e8', padding: 20,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, cursor: 'pointer',
+            border: '2px dashed rgba(106,61,232,0.25)', padding: 20,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 8, cursor: 'pointer',
           }}
         >
           <div style={{
-            width: 40, height: 40, borderRadius: '50%', background: 'rgba(106,61,232,0.1)',
+            width: 40, height: 40, borderRadius: '50%',
+            background: 'rgba(106,61,232,0.08)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <i className="ti ti-plus" style={{ fontSize: 20, color: '#6a3de8' }} />
           </div>
           <p style={{ fontSize: 13, fontWeight: 600, color: '#666' }}>Start a new goal</p>
-          <p style={{ fontSize: 11, color: '#aaa' }}>Tap to create and invite friends</p>
+          <p style={{ fontSize: 11, color: '#aaa' }}>Or book a deal from Smart Find</p>
         </div>
       </div>
 
@@ -186,32 +234,54 @@ export default function SquadPage() {
         <div
           onClick={(e) => e.target === e.currentTarget && setActiveGoal(null)}
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.7)',
+            position: 'fixed', inset: 0, background: 'rgba(26,10,61,0.75)',
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
             zIndex: 500, backdropFilter: 'blur(4px)',
           }}
         >
-          <div style={{ background: '#fff', borderRadius: '24px 24px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 480 }}>
+          <div style={{
+            background: '#fff', borderRadius: '24px 24px 0 0',
+            padding: '24px 20px 44px', width: '100%', maxWidth: 430,
+            animation: 'slideUp .25s ease',
+          }}>
             {contributed ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0' }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#E8FFF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, marginBottom: 12 }}>✅</div>
+                <div style={{
+                  width: 72, height: 72, borderRadius: '50%',
+                  background: 'rgba(0,200,150,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 32, marginBottom: 14,
+                }}>✅</div>
                 <p style={{ fontSize: 18, fontWeight: 700, color: '#1a1a2e' }}>Contributed!</p>
-                <p style={{ fontSize: 13, color: '#aaa', marginTop: 4 }}>RM {parseFloat(contributeAmount).toFixed(2)} added to {activeGoal.name}</p>
+                <p style={{ fontSize: 13, color: '#aaa', marginTop: 6 }}>
+                  RM {parseFloat(contributeAmount).toFixed(2)} added to {activeGoal.name}
+                </p>
               </div>
             ) : (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                   <div>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a2e' }}>{activeGoal.name}</p>
-                    <p style={{ fontSize: 12, color: '#aaa' }}>RM {activeGoal.current.toLocaleString()} of RM {activeGoal.target.toLocaleString()} saved</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 20 }}>{activeGoal.emoji}</span>
+                      <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a2e' }}>{activeGoal.name}</p>
+                    </div>
+                    <p style={{ fontSize: 12, color: '#aaa' }}>
+                      RM {activeGoal.current.toLocaleString()} of RM {activeGoal.target.toLocaleString()} saved
+                    </p>
                   </div>
-                  <button onClick={() => { setActiveGoal(null); setContributeAmount(''); }} style={{ background: 'none', border: 'none', fontSize: 20, color: '#bbb', cursor: 'pointer' }}>✕</button>
+                  <button
+                    onClick={() => { setActiveGoal(null); setContributeAmount(''); }}
+                    style={{ background: 'none', border: 'none', fontSize: 20, color: '#bbb', cursor: 'pointer' }}
+                  >✕</button>
                 </div>
 
                 <p style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>How much?</p>
 
                 <div style={{ position: 'relative', marginBottom: 12 }}>
-                  <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#aaa', fontWeight: 600, fontSize: 14 }}>RM</span>
+                  <span style={{
+                    position: 'absolute', left: 14, top: '50%',
+                    transform: 'translateY(-50%)', color: '#aaa', fontWeight: 600, fontSize: 14,
+                  }}>RM</span>
                   <input
                     type="number"
                     value={contributeAmount}
@@ -220,21 +290,26 @@ export default function SquadPage() {
                     autoFocus
                     style={{
                       width: '100%', padding: '14px 14px 14px 42px', borderRadius: 12,
-                      border: '0.5px solid #e0e0e8', fontSize: 20, fontWeight: 700,
+                      border: '0.5px solid #e0e0e8', fontSize: 22, fontWeight: 700,
                       color: '#1a1a2e', outline: 'none', fontFamily: 'inherit',
                     }}
                   />
                 </div>
 
+                {/* Quick amounts */}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                   {[20, 50, 100, 200].map((amt) => (
-                    <button key={amt} onClick={() => setContributeAmount(amt.toString())} style={{
-                      flex: 1, padding: '8px 0', borderRadius: 10,
-                      border: `0.5px solid ${contributeAmount === amt.toString() ? '#6C63FF' : '#e0e0e8'}`,
-                      background: contributeAmount === amt.toString() ? '#6C63FF' : '#fff',
-                      color: contributeAmount === amt.toString() ? '#fff' : '#666',
-                      fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                    }}>RM {amt}</button>
+                    <button
+                      key={amt}
+                      onClick={() => setContributeAmount(amt.toString())}
+                      style={{
+                        flex: 1, padding: '8px 0', borderRadius: 10,
+                        border: `0.5px solid ${contributeAmount === amt.toString() ? '#6a3de8' : '#e0e0e8'}`,
+                        background: contributeAmount === amt.toString() ? '#6a3de8' : '#fff',
+                        color: contributeAmount === amt.toString() ? '#fff' : '#666',
+                        fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >RM {amt}</button>
                   ))}
                 </div>
 
@@ -244,7 +319,8 @@ export default function SquadPage() {
                   style={{
                     width: '100%', padding: 16, borderRadius: 16, border: 'none',
                     fontFamily: 'inherit', fontSize: 15, fontWeight: 700,
-                    background: contributeAmount && parseFloat(contributeAmount) > 0 ? '#6C63FF' : '#e0e0e8',
+                    background: contributeAmount && parseFloat(contributeAmount) > 0
+                      ? 'linear-gradient(135deg, #6a3de8, #3d1f8a)' : '#e0e0e8',
                     color: contributeAmount && parseFloat(contributeAmount) > 0 ? '#fff' : '#aaa',
                     cursor: contributeAmount && parseFloat(contributeAmount) > 0 ? 'pointer' : 'not-allowed',
                   }}
@@ -262,13 +338,16 @@ export default function SquadPage() {
         <div
           onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}
           style={{
-            position: 'fixed', inset: 0, background: 'rgba(26,26,46,0.7)',
+            position: 'fixed', inset: 0, background: 'rgba(26,10,61,0.75)',
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
             zIndex: 500, backdropFilter: 'blur(4px)',
           }}
         >
-          <div style={{ background: '#fff', borderRadius: '24px 24px 0 0', padding: '24px 20px 44px', width: '100%', maxWidth: 480 }}>
-
+          <div style={{
+            background: '#fff', borderRadius: '24px 24px 0 0',
+            padding: '24px 20px 44px', width: '100%', maxWidth: 430,
+            animation: 'slideUp .25s ease',
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <p style={{ fontSize: 16, fontWeight: 700, color: '#1a1a2e' }}>New saving goal</p>
               <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: '#bbb', cursor: 'pointer' }}>✕</button>
@@ -279,15 +358,15 @@ export default function SquadPage() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
               {GOAL_EMOJIS.map((e) => (
                 <button key={e} onClick={() => setNewEmoji(e)} style={{
-                  width: 38, height: 38, borderRadius: 10, fontSize: 18,
-                  border: `2px solid ${newEmoji === e ? '#6C63FF' : '#e0e0e8'}`,
-                  background: newEmoji === e ? '#EEEDFE' : '#fff',
+                  width: 40, height: 40, borderRadius: 10, fontSize: 18,
+                  border: `2px solid ${newEmoji === e ? '#6a3de8' : '#e0e0e8'}`,
+                  background: newEmoji === e ? 'rgba(106,61,232,0.1)' : '#fff',
                   cursor: 'pointer',
                 }}>{e}</button>
               ))}
             </div>
 
-            {/* Goal name */}
+            {/* Name */}
             <p style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 6 }}>Goal name</p>
             <input
               type="text"
@@ -301,7 +380,7 @@ export default function SquadPage() {
               }}
             />
 
-            {/* Target amount */}
+            {/* Target */}
             <p style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 6 }}>Target amount (RM)</p>
             <input
               type="number"
@@ -315,13 +394,13 @@ export default function SquadPage() {
               }}
             />
 
-            {/* Color picker */}
+            {/* Color */}
             <p style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 8 }}>Colour</p>
-            <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
               {GOAL_COLORS.map((c) => (
                 <button key={c} onClick={() => setNewColor(c)} style={{
-                  width: 30, height: 30, borderRadius: '50%', background: c, border: 'none',
-                  cursor: 'pointer',
+                  width: 32, height: 32, borderRadius: '50%', background: c,
+                  border: 'none', cursor: 'pointer',
                   outline: newColor === c ? `3px solid ${c}` : 'none',
                   outlineOffset: 2,
                 }} />
@@ -331,14 +410,16 @@ export default function SquadPage() {
             {/* Preview */}
             {newName && (
               <div style={{
-                background: newColor + '11', borderRadius: 14, padding: '12px 14px',
+                background: newColor + '12', borderRadius: 14, padding: '12px 14px',
                 border: `0.5px solid ${newColor}44`, marginBottom: 16,
                 display: 'flex', alignItems: 'center', gap: 10,
               }}>
-                <span style={{ fontSize: 22 }}>{newEmoji}</span>
+                <span style={{ fontSize: 24 }}>{newEmoji}</span>
                 <div>
                   <p style={{ fontSize: 14, fontWeight: 700, color: '#1a1a2e' }}>{newName}</p>
-                  {newTarget && <p style={{ fontSize: 12, color: '#aaa' }}>Target: RM {parseFloat(newTarget).toLocaleString()}</p>}
+                  {newTarget && (
+                    <p style={{ fontSize: 12, color: '#aaa' }}>Target: RM {parseFloat(newTarget).toLocaleString()}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -348,7 +429,8 @@ export default function SquadPage() {
               style={{
                 width: '100%', padding: 16, borderRadius: 16, border: 'none',
                 fontFamily: 'inherit', fontSize: 15, fontWeight: 700,
-                background: newName && newTarget ? '#6C63FF' : '#e0e0e8',
+                background: newName && newTarget
+                  ? 'linear-gradient(135deg, #6a3de8, #3d1f8a)' : '#e0e0e8',
                 color: newName && newTarget ? '#fff' : '#aaa',
                 cursor: newName && newTarget ? 'pointer' : 'not-allowed',
               }}
@@ -356,6 +438,13 @@ export default function SquadPage() {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(100%); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

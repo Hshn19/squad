@@ -2,21 +2,36 @@
 import { useState, useEffect } from 'react';
 
 export default function SplashScreen() {
-  const [visible, setVisible] = useState(true);
+  // Start as null = unknown, not visible
+  const [show, setShow] = useState(null);
   const [fading, setFading] = useState(false);
 
   useEffect(() => {
+    // Only runs client-side — check sessionStorage immediately on mount
     const seen = sessionStorage.getItem('squad_splash');
-    if (seen) { setVisible(false); return; }
+    if (seen) {
+      setShow(false);
+      return;
+    }
+
+    // First visit — show it
+    setShow(true);
+
     const fadeTimer = setTimeout(() => setFading(true), 1900);
     const hideTimer = setTimeout(() => {
-      setVisible(false);
+      setShow(false);
       sessionStorage.setItem('squad_splash', '1');
     }, 2400);
-    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(hideTimer);
+    };
   }, []);
 
-  if (!visible) return null;
+  // null = not yet determined (SSR / first paint) — render nothing
+  // false = seen before or done — render nothing
+  if (!show) return null;
 
   return (
     <div style={{
@@ -29,17 +44,16 @@ export default function SplashScreen() {
       pointerEvents: fading ? 'none' : 'all',
     }}>
 
-      {/* Glow orb behind logo */}
+      {/* Glow orb */}
       <div style={{
         position: 'absolute',
-        width: 200, height: 200,
-        borderRadius: '50%',
+        width: 200, height: 200, borderRadius: '50%',
         background: 'radial-gradient(circle, rgba(106,61,232,0.4) 0%, transparent 70%)',
         top: '50%', left: '50%',
         transform: 'translate(-50%, -60%)',
       }} />
 
-      {/* Logo mark */}
+      {/* Logo */}
       <div style={{
         width: 88, height: 88, borderRadius: 26,
         background: 'rgba(255,255,255,0.12)',
@@ -48,14 +62,11 @@ export default function SplashScreen() {
         marginBottom: 24,
         animation: 'splashPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both',
         boxShadow: '0 0 40px rgba(106,61,232,0.5), inset 0 1px 0 rgba(255,255,255,0.15)',
-        backdropFilter: 'blur(10px)',
       }}>
         <svg viewBox="0 0 52 52" width="52" height="52" fill="none">
-          {/* S for Squad */}
           <text x="6" y="40" fontSize="38" fontWeight="700"
             fill="#fff" fontFamily="DM Sans, sans-serif"
             style={{ letterSpacing: '-2px' }}>S</text>
-          {/* Dot accent */}
           <circle cx="44" cy="12" r="5" fill="rgba(255,255,255,0.5)" />
         </svg>
       </div>
@@ -77,7 +88,7 @@ export default function SplashScreen() {
         letterSpacing: '.3px',
       }}>Smart budgeting · Group savings</p>
 
-      {/* Loading dots */}
+      {/* Dots */}
       <div style={{
         display: 'flex', gap: 7, marginTop: 52,
         animation: 'splashFadeUp 0.5s 0.5s ease both',
@@ -100,7 +111,6 @@ export default function SplashScreen() {
           padding: '8px 16px', borderRadius: 10,
           border: '1px solid rgba(255,255,255,0.1)',
           background: 'rgba(255,255,255,0.06)',
-          backdropFilter: 'blur(8px)',
         }}>
           <p style={{
             fontSize: 11, color: 'rgba(255,255,255,0.45)',

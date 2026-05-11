@@ -93,27 +93,60 @@ export default function VoiceModal({ onClose }) {
       return;
     }
 
-    // ── 2. Transfer intent (regex, no API) ──
-    // Must come BEFORE nav keywords so "transfer" doesn't trigger navigation
-    const transferMatch =
-      lower.match(/(?:transfer|send|pay)\s+(?:rm\s*)?(\d+(?:\.\d+)?)\s+to\s+(\w+)/i) ||
-      lower.match(/(?:transfer|send|pay)\s+(?:rm\s*)?(\d+(?:\.\d+)?)\s+(\w+)/i);
+    // ── 2. Transfer intent — improved accuracy ──
+const tLower = lower
+  .replace(/rm\s*/gi, '')      // strip "RM" prefix
+  .replace(/ringgit/gi, '');   // strip "ringgit"
 
-    if (transferMatch) {
-      const amount = transferMatch[1];
-      const recipient = transferMatch[2];
-      const recipientFormatted =
-        recipient.charAt(0).toUpperCase() + recipient.slice(1).toLowerCase();
-      const params = new URLSearchParams({
-        recipient: recipientFormatted,
-        amount,
-        note: '',
-      });
-      router.push(`/transfer?${params.toString()}`);
-      showToast(`Opening Transfer for ${recipientFormatted}`);
-      onClose();
-      return;
+// Patterns: "transfer/send/pay/hantar [amount] to [name]"
+const transferPatterns = [
+  /(?:transfer|send|pay|hantar)\s+(\d+(?:\.\d+)?)\s+to\s+(\w+)/i,
+  /(?:transfer|send|pay|hantar)\s+to\s+(\w+)\s+(\d+(?:\.\d+)?)/i,  // "send to Ahmad 50"
+  /(?:transfer|send|pay|hantar)\s+(\w+)\s+(\d+(?:\.\d+)?)/i,        // "pay Ahmad 50"
+];
+
+let transferAmount = null;
+let transferRecipient = null;
+
+for (const pattern of transferPatterns) {
+  const m = tLower.match(pattern);
+  if (m) {
+    // Pattern 2 has name first, then amount
+    if (pattern.toString().includes('to\\s+(\\w+)\\s+')) {
+      transferRecipient = m[1];
+      transferAmount    = m[2];
+    } else {
+      transferAmount    = m[1];
+      transferRecipient = m[2];
     }
+    break;
+  }
+}
+
+// Validate — recipient shouldn't be a number, amount should be numeric
+if (
+  transferAmount &&
+  transferRecipient &&
+  !isNaN(parseFloat(transferAmount)) &&
+  isNaN(parseFloat(transferRecipient)) &&
+  parseFloat(transferAmount) > 0
+) {
+  const recipientFormatted =
+    transferRecipient.charAt(0).toUpperCase() +
+    transferRecipient.slice(1).toLowerCase();
+  const isSquadTransfer = /squad|group|split|shared/i.test(lower);
+  const params = new URLSearchParams({
+    recipient: recipientFormatted,
+    amount: parseFloat(transferAmount).toString(),
+    note: '',
+    squad: isSquadTransfer ? 'true' : 'false',
+    t: Date.now(), // cache buster — forces searchParams to change even for same recipient
+  });
+  router.push(`/transfer?${params.toString()}`);
+  showToast(`Opening Transfer — RM ${transferAmount} to ${recipientFormatted}`);
+  onClose();
+  return;
+}
 
     // ── 3. Navigation (instant, no API) ──
     for (const [keyword, path] of Object.entries(NAV_KEYWORDS)) {
@@ -304,7 +337,7 @@ export default function VoiceModal({ onClose }) {
                 onClick={executeAction}
                 style={{
                   flex: 2, padding: 14, borderRadius: 14,
-                  border: 'none', background: '#6C63FF',
+                  border: 'none', background: 'linear-gradient(135deg, #6a3de8, #3d1f8a)',
                   fontSize: 14, fontWeight: 700, color: '#fff',
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}
@@ -337,7 +370,7 @@ export default function VoiceModal({ onClose }) {
                 onClick={() => { setPhase('idle'); startListening(); }}
                 style={{
                   flex: 2, padding: 14, borderRadius: 14,
-                  border: 'none', background: '#6C63FF',
+                  border: 'none', background: 'linear-gradient(135deg, #6a3de8, #3d1f8a)',
                   fontSize: 14, fontWeight: 700, color: '#fff',
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}
