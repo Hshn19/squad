@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import { useApp } from '@/lib/AppContext';
 import { useRouter } from 'next/navigation';
 
@@ -28,15 +29,6 @@ function DonutChart({ data }) {
   );
 }
 
-const SPENDING = [
-  { label: 'Food',      value: 280, color: '#FF6B6B' },
-  { label: 'Transport', value: 160, color: '#4ECDC4' },
-  { label: 'Groceries', value: 120, color: '#FFE66D' },
-  { label: 'Bills',     value: 100, color: '#A8E6CF' },
-  { label: 'Squad',     value: 55,  color: '#6a3de8' },
-];
-
-// Mini sparkline — just 4 points, compact
 function MiniSparkline({ data, color }) {
   const W = 80, H = 28;
   const min = Math.min(...data);
@@ -54,33 +46,81 @@ function MiniSparkline({ data, color }) {
   );
 }
 
-const STATIC_TX = [
-  { emoji: '💸', desc: 'To Sha',           date: 'Today',  amount: -10   },
-  { emoji: '🍔', desc: "McDonald's Subang", date: 'May 7',  amount: -12.5 },
-  { emoji: '🚗', desc: 'Grab to campus',   date: 'May 7',  amount: -8    },
-  { emoji: '💸', desc: 'From Ahmad',        date: 'May 6',  amount: 50    },
+const SPENDING = [
+  { label: 'Food',      value: 280, color: '#FF6B6B' },
+  { label: 'Transport', value: 160, color: '#4ECDC4' },
+  { label: 'Groceries', value: 120, color: '#FFE66D' },
+  { label: 'Bills',     value: 100, color: '#A8E6CF' },
+  { label: 'Squad',     value: 55,  color: '#6a3de8' },
 ];
+
+const STATIC_TX = [
+  { emoji: '💸', desc: 'To Sha',            date: 'Today', amount: -10   },
+  { emoji: '🍔', desc: "McDonald's Subang",  date: 'May 7', amount: -12.5 },
+  { emoji: '🚗', desc: 'Grab to campus',    date: 'May 7', amount: -8    },
+  { emoji: '💸', desc: 'From Ahmad',         date: 'May 6', amount: 50    },
+];
+
+// ── Greeting based on time of day ──
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning,';
+  if (h < 17) return 'Good afternoon,';
+  return 'Good evening,';
+}
 
 export default function DashboardPage() {
   const { balances, transactions } = useApp();
   const router = useRouter();
+
+  // ── AI tip state — inside component ──
+  const [aiTip, setAiTip] = useState(
+    "You've spent RM 280 on food this month — 35% of your budget. Your Squad pooled RM 300 for Smart Find. Try cooking 2× a week to save ~RM 60."
+  );
+  const [tipLoading, setTipLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchTip() {
+      setTipLoading(true);
+      try {
+        const res = await fetch('/api/coach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: 'Give me one specific, actionable money tip based on my spending this month. Keep it under 2 sentences.',
+            context: {
+              balances,
+              totalSpent: 800,
+              topCategory: 'Food (RM 280)',
+              recentTx: "McDonald's, Grab, 99 Speedmart",
+            },
+          }),
+        });
+        const data = await res.json();
+        if (data.reply) setAiTip(data.reply);
+      } catch { /* keep static tip */ }
+      setTipLoading(false);
+    }
+    fetchTip();
+  }, []);
+
   const totalBalance = (balances.main + balances.savings + balances.squad).toFixed(2);
   const recentTx = transactions.length > 0 ? transactions.slice(0, 4) : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
-      {/* ── Purple header ── */}
+      {/* ── Header ── */}
       <div style={{ background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', padding: '48px 20px 52px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div>
-            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>Good morning,</p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>{getGreeting()}</p>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Harshini 👋</h1>
           </div>
           <button style={{
-            width: 38, height: 38, background: 'rgba(255,255,255,0.2)',
-            border: 'none', borderRadius: '50%', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            width: 38, height: 38, background: 'rgba(255,255,255,0.15)',
+            border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
           }}>
             <i className="ti ti-bell" style={{ fontSize: 18, color: '#fff' }} />
           </button>
@@ -88,16 +128,17 @@ export default function DashboardPage() {
 
         {/* Balance card */}
         <div style={{
-          background: 'rgba(255,255,255,0.15)', borderRadius: 20,
-          padding: 14, border: '1px solid rgba(255,255,255,0.2)',
+          background: 'rgba(255,255,255,0.12)', borderRadius: 20,
+          padding: 14, border: '1px solid rgba(255,255,255,0.15)',
+          backdropFilter: 'blur(10px)',
         }}>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginBottom: 2 }}>Total Balance</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Total Balance</p>
           <p style={{ fontSize: 30, fontWeight: 700, color: '#fff', marginBottom: 10 }}>RM {totalBalance}</p>
           <div style={{ display: 'flex', gap: 14 }}>
             {[
-              { label: 'Savings', val: `RM ${balances.savings}`, icon: 'ti-trending-up', bg: 'rgba(0,200,150,0.25)',   color: '#00C896' },
-              { label: 'Squad',   val: `RM ${balances.squad}`,   icon: 'ti-users',        bg: 'rgba(156,143,255,0.25)', color: '#9C8FFF' },
-              { label: 'Main',    val: `RM ${balances.main.toFixed(2)}`, icon: 'ti-wallet', bg: 'rgba(255,255,255,0.2)', color: '#fff' },
+              { label: 'Savings', val: `RM ${balances.savings}`,         icon: 'ti-trending-up', bg: 'rgba(0,200,150,0.25)',    color: '#00C896' },
+              { label: 'Squad',   val: `RM ${balances.squad}`,           icon: 'ti-users',        bg: 'rgba(156,111,255,0.25)', color: '#9c6fff' },
+              { label: 'Main',    val: `RM ${balances.main.toFixed(2)}`, icon: 'ti-wallet',       bg: 'rgba(255,255,255,0.2)',  color: '#fff'    },
             ].map(({ label, val, icon, bg, color }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <div style={{
@@ -134,25 +175,36 @@ export default function DashboardPage() {
           </div>
           <span style={{
             display: 'inline-flex', padding: '3px 9px', borderRadius: 20,
-            fontSize: 10, fontWeight: 600, background: 'rgba(106,61,232,0.1)', color: '#9c6fff',
+            fontSize: 10, fontWeight: 600,
+            background: 'rgba(106,61,232,0.1)', color: '#9c6fff',
           }}>Best: 21 days</span>
         </div>
 
-        {/* AI Coach */}
+        {/* AI Coach — live tip */}
         <div style={{
           background: 'linear-gradient(135deg, #2a1260, #4a2aa0)',
           borderRadius: 16, margin: '0 14px 10px', padding: 14,
         }}>
-          <p style={{
-            fontSize: 9, fontWeight: 700, letterSpacing: '.8px',
-            color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4,
-          }}>AI Coach</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <p style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: '.8px',
+              color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase',
+            }}>AI Coach</p>
+            {tipLoading && (
+              <div style={{
+                width: 10, height: 10, borderRadius: '50%',
+                border: '1.5px solid rgba(255,255,255,0.3)',
+                borderTopColor: '#fff',
+                animation: 'spin .7s linear infinite',
+              }} />
+            )}
+          </div>
           <p style={{ fontSize: 12, color: '#fff', lineHeight: 1.6 }}>
-            You've spent RM 280 on food this month — 35% of your budget. Your Squad pooled RM 300 for Smart Find. Try cooking 2× a week to save ~RM 60.
+            {tipLoading ? 'Analysing your spending…' : aiTip}
           </p>
         </div>
 
-        {/* ── Spending Mirror card — tappable ── */}
+        {/* Spending Mirror card — tappable */}
         <div
           onClick={() => router.push('/mirror')}
           style={{
@@ -167,7 +219,8 @@ export default function DashboardPage() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{
-                width: 28, height: 28, borderRadius: 8, background: 'rgba(106,61,232,0.1)',
+                width: 28, height: 28, borderRadius: 8,
+                background: 'rgba(106,61,232,0.1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <i className="ti ti-chart-donut" style={{ fontSize: 14, color: '#6a3de8' }} />
@@ -177,7 +230,8 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{
                 padding: '3px 9px', borderRadius: 20,
-                fontSize: 10, fontWeight: 600, background: 'rgba(106,61,232,0.1)', color: '#9c6fff',
+                fontSize: 10, fontWeight: 600,
+                background: 'rgba(106,61,232,0.1)', color: '#9c6fff',
               }}>May 2026</span>
               <i className="ti ti-chevron-right" style={{ fontSize: 14, color: '#bbb' }} />
             </div>
@@ -192,7 +246,10 @@ export default function DashboardPage() {
               {SPENDING.map((d) => (
                 <div key={d.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 10, color: '#888', display: 'flex', alignItems: 'center' }}>
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, marginRight: 5, flexShrink: 0 }} />
+                    <span style={{
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: d.color, marginRight: 5, flexShrink: 0,
+                    }} />
                     {d.label}
                   </span>
                   <span style={{ fontSize: 10, fontWeight: 600, color: '#1a1a2e' }}>RM {d.value}</span>
@@ -201,16 +258,12 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Sparklines row — spending vs savings at a glance */}
-          <div style={{
-            borderTop: '0.5px solid #f2f2f2',
-            padding: '10px 14px',
-            display: 'flex', gap: 0,
-          }}>
+          {/* Sparklines */}
+          <div style={{ borderTop: '0.5px solid #f2f2f2', padding: '10px 14px', display: 'flex' }}>
             {[
-              { label: 'Spending trend',  data: [720, 850, 780, 800], color: '#6a3de8', suffix: '↑ vs Mar' },
-              { label: 'Savings trend',   data: [180, 120, 160, 145], color: '#00C896', suffix: '↓ vs Feb' },
-              { label: 'Squad spending',  data: [40,  50,  50,  55],  color: '#9C8FFF', suffix: '↑ steady' },
+              { label: 'Spending trend', data: [720, 850, 780, 800], color: '#6a3de8', suffix: '↑ vs Mar' },
+              { label: 'Savings trend',  data: [180, 120, 160, 145], color: '#00C896', suffix: '↓ vs Feb' },
+              { label: 'Squad spending', data: [40,  50,  50,  55],  color: '#9c6fff', suffix: '↑ steady' },
             ].map((s, i) => (
               <div key={s.label} style={{
                 flex: 1, textAlign: 'center',
@@ -226,7 +279,7 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* CTA button */}
+          {/* CTA */}
           <div style={{
             background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)',
             padding: '11px 14px',
@@ -256,7 +309,8 @@ export default function DashboardPage() {
           {(recentTx || STATIC_TX).map((tx, i, arr) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '7px 0', borderBottom: i < arr.length - 1 ? '0.5px solid #f7f7f7' : 'none',
+              padding: '7px 0',
+              borderBottom: i < arr.length - 1 ? '0.5px solid #f7f7f7' : 'none',
             }}>
               <div style={{
                 width: 36, height: 36, background: '#f7f7f9', borderRadius: '50%',
@@ -275,6 +329,8 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

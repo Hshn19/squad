@@ -81,25 +81,36 @@ export function AppProvider({ children }) {
     }, ...prev]);
   }, []);
 
-  const addExpense = useCallback((amount, category = 'Other', description = 'Expense') => {
-    const EMOJI_MAP = {
-      Food: '🍔', Transport: '🚗', Groceries: '🛒',
-      Bills: '📱', Entertainment: '🎬', Other: '💳',
-    };
-    const amt = parseFloat(amount);
-    setBalances((prev) => ({
-      ...prev,
-      main: Math.max(0, parseFloat((prev.main - amt).toFixed(2))),
-    }));
-    setTransactions((prev) => [{
-      id: Date.now(),
-      emoji: EMOJI_MAP[category] || '💳',
-      description,
-      date: 'Just now',
-      amount: -amt,
-      category,
-    }, ...prev]);
-  }, []);
+  const addExpense = useCallback(async (amount, category = 'Other', description = 'Expense') => {
+  const EMOJI_MAP = {
+    Food: '🍔', Transport: '🚗', Groceries: '🛒',
+    Bills: '📱', Entertainment: '🎬', Shopping: '🛍️', Other: '💳',
+  };
+  const amt = parseFloat(amount);
+  setBalances((prev) => ({
+    ...prev,
+    main: Math.max(0, parseFloat((prev.main - amt).toFixed(2))),
+  }));
+  const newTx = {
+    id: Date.now(),
+    emoji: EMOJI_MAP[category] || '💳',
+    description,
+    date: 'Just now',
+    amount: -amt,
+    category,
+  };
+  setTransactions((prev) => [newTx, ...prev]);
+
+  // AI tip based on category spending
+  const tips = {
+    Food: `Food expense logged ✓ You've spent RM ${280 + amt} on food this month — watch that budget!`,
+    Transport: `Transport logged ✓ RM ${amt} added. Try carpooling to save ~RM 40/month.`,
+    Shopping: `Shopping logged ✓ Remember the 24-hour rule before your next purchase!`,
+    Entertainment: `Entertainment logged ✓ Balance is key — you deserve it lah!`,
+    Groceries: `Groceries logged ✓ Cooking more = saving more. Keep it up!`,
+  };
+  showToast(tips[category] || `✓ RM ${amt} logged under ${category}`);
+}, [showToast]);
 
   const addSquadGoal = useCallback((goal) => {
   setSquadGoals((prev) => [...prev, {

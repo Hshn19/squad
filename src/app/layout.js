@@ -2,6 +2,8 @@ import './globals.css';
 import { AppProvider } from '@/lib/AppContext';
 import BottomNav from '@/components/BottomNav';
 import SplashScreen from '@/components/SplashScreen';
+import AICoach from '@/components/AICoach';
+
 
 export const metadata = {
   title: 'Squad',
@@ -55,6 +57,7 @@ export default function RootLayout({ children }) {
               }}>
                 {children}
               </main>
+              <AICoach />
               <BottomNav />
             </div>
           </div>

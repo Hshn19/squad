@@ -1,25 +1,33 @@
 import { NextResponse } from 'next/server';
 
-const SYSTEM_PROMPT = `You are a voice command parser for FinWise, a Malaysian youth budgeting app.
+const SYSTEM_PROMPT = `You are a voice command parser for Squad, a Malaysian youth budgeting app.
 Parse the user's voice command and return ONLY a JSON object. No explanation, no markdown.
 
 Possible action types:
 - transfer: { type: "transfer", recipient: string, amount: number, note: string|null }
-- add_expense: { type: "add_expense", amount: number, category: "Food"|"Transport"|"Groceries"|"Bills"|"Entertainment"|"Other", description: string }
+- add_expense: { type: "add_expense", amount: number, category: "Food"|"Transport"|"Groceries"|"Bills"|"Entertainment"|"Shopping"|"Other", description: string }
 - squad_contribute: { type: "squad_contribute", amount: number, goal: string, goalId: string }
 - navigate: { type: "navigate", page: "home"|"dashboard"|"transfer"|"mirror"|"squad"|"smartfind"|"find"|"transactions" }
 - check_balance: { type: "check_balance" }
 - unknown: { type: "unknown" }
 
+Category detection rules (be smart about Malaysian context):
+- Food: makan, lunch, dinner, breakfast, mamak, nasi, McD, KFC, pizza, boba, kopi, teh tarik, restaurant, cafe
+- Transport: Grab, bus, MRT, LRT, parking, Petronas, petrol, Shell, toll, taxi
+- Groceries: 99 Speedmart, Giant, Jaya Grocer, Tesco, supermarket, pasar, market, groceries
+- Bills: internet, Celcom, Maxis, Digi, electricity, TNB, water, Unifi, Netflix, Spotify
+- Entertainment: movie, GSC, TGV, concert, game, bowling, karaoke
+- Shopping: Shopee, Lazada, clothes, shoes, H&M, Uniqlo, shopping
+
 Examples:
-"Transfer RM 20 to Ahmad" → { "type": "transfer", "recipient": "Ahmad", "amount": 20, "note": null }
-"Send 15 to Sha for food" → { "type": "transfer", "recipient": "Sha", "amount": 15, "note": "food" }
+"Spent RM12 at mamak" → { "type": "add_expense", "amount": 12, "category": "Food", "description": "Mamak meal" }
+"Grab to KLCC RM18" → { "type": "add_expense", "amount": 18, "category": "Transport", "description": "Grab to KLCC" }
+"Bought boba RM8.50" → { "type": "add_expense", "amount": 8.50, "category": "Food", "description": "Boba drink" }
+"Top up Grab RM50" → { "type": "add_expense", "amount": 50, "category": "Transport", "description": "Grab top up" }
+"Transfer RM20 to Ahmad" → { "type": "transfer", "recipient": "Ahmad", "amount": 20, "note": null }
 "Go to mirror" → { "type": "navigate", "page": "mirror" }
-"I spent RM 12 on food" → { "type": "add_expense", "amount": 12, "category": "Food", "description": "Food expense" }
-"Grab to campus RM 8" → { "type": "add_expense", "amount": 8, "category": "Transport", "description": "Grab to campus" }
-"Add RM 100 to Tokyo trip" → { "type": "squad_contribute", "amount": 100, "goal": "Tokyo Trip", "goalId": "tokyo" }
-"What's my balance" → { "type": "check_balance" }
-"Check my savings" → { "type": "check_balance" }`;
+"Add RM100 to Tokyo trip" → { "type": "squad_contribute", "amount": 100, "goal": "Tokyo Trip", "goalId": "tokyo" }
+"What's my balance" → { "type": "check_balance" }`;
 
 export async function POST(req) {
   try {
