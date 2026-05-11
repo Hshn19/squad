@@ -27,7 +27,12 @@ Examples:
 "Transfer RM20 to Ahmad" → { "type": "transfer", "recipient": "Ahmad", "amount": 20, "note": null }
 "Go to mirror" → { "type": "navigate", "page": "mirror" }
 "Add RM100 to Tokyo trip" → { "type": "squad_contribute", "amount": 100, "goal": "Tokyo Trip", "goalId": "tokyo" }
+"Add RM 100 to Tokyo trip" → { "type": "squad_contribute", "amount": 100, "goal": "Tokyo Trip", "goalId": "tokyo" }
+"Contribute RM 50 to Penang" → { "type": "squad_contribute", "amount": 50, "goal": "Penang Trip", "goalId": "penang" }
+"Put RM 200 into laptop fund" → { "type": "squad_contribute", "amount": 200, "goal": "New Laptop", "goalId": "laptop" }
+"Add 75 to squad savings" → { "type": "squad_contribute", "amount": 75, "goal": "squad", "goalId": "tokyo" }
 "What's my balance" → { "type": "check_balance" }`;
+
 
 export async function POST(req) {
   try {

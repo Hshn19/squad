@@ -27,7 +27,7 @@ const NAV_KEYWORDS = {
 };
 
 export default function VoiceModal({ onClose }) {
-  const { doTransfer, addExpense, contributeToGoal, balances, showToast } = useApp();
+  const { doTransfer, addExpense, contributeToGoal, balances, showToast, squadGoals } = useApp();
   const router = useRouter();
 
   const [phase, setPhase] = useState('idle');
@@ -212,23 +212,74 @@ if (
   }
 
   function executeAction() {
-    if (!parsedAction) return;
-    const a = parsedAction;
-    if (a.type === 'add_expense') {
-      addExpense(a.amount, a.category || 'Other', a.description || 'Expense');
-      showToast(`✓ Logged RM ${a.amount} · ${a.category}`);
-    } else if (a.type === 'squad_contribute') {
-      contributeToGoal(a.goalId || 'tokyo', 'Harshini', a.amount);
-      showToast(`✓ Added RM ${a.amount} to ${a.goal}`);
-    }
+  if (!parsedAction) return;
+  const a = parsedAction;
+
+  if (a.type === 'add_expense') {
+    addExpense(a.amount, a.category || 'Other', a.description || 'Expense');
+    showToast(`✓ Logged RM ${a.amount} · ${a.category || 'Other'}`);
     onClose();
+    return;
   }
 
-  function confirmLabel(a) {
-    if (a.type === 'add_expense') return `Log RM ${a.amount} expense · ${a.category || 'Other'}`;
-    if (a.type === 'squad_contribute') return `Add RM ${a.amount} to ${a.goal || 'squad goal'}`;
-    return 'Execute action';
+  if (a.type === 'squad_contribute') {
+    const amt = parseFloat(a.amount);
+    if (!amt || amt <= 0) {
+      showToast('Invalid amount');
+      onClose();
+      return;
+    }
+
+    // Match goal by name fuzzy search across squadGoals from context
+    const goalName = (a.goal || a.goalId || '').toLowerCase();
+    const matched = squadGoals.find((g) => {
+      const gName = g.name.toLowerCase();
+      return (
+        gName.includes(goalName) ||
+        goalName.includes(gName.split(' ')[0]) ||
+        g.id === a.goalId ||
+        g.id.includes(goalName.split(' ')[0])
+      );
+    });
+
+    const targetGoal = matched || squadGoals[0]; // fallback to first goal
+
+    if (!targetGoal) {
+      showToast('No squad goals found — create one first!');
+      onClose();
+      return;
+    }
+
+    contributeToGoal(targetGoal.id, 'Harshini', amt);
+    showToast(`✓ Added RM ${amt} to ${targetGoal.name}`);
+    onClose();
+    return;
   }
+
+  onClose();
+}
+
+  function confirmLabel(a) {
+  if (a.type === 'add_expense') {
+    return `Log RM ${a.amount} expense · ${a.category || 'Other'}`;
+  }
+  if (a.type === 'squad_contribute') {
+    // Find actual goal name for display
+    const goalName = (a.goal || a.goalId || '').toLowerCase();
+    const matched = squadGoals.find((g) => {
+      const gName = g.name.toLowerCase();
+      return (
+        gName.includes(goalName) ||
+        goalName.includes(gName.split(' ')[0]) ||
+        g.id === a.goalId ||
+        g.id.includes(goalName.split(' ')[0])
+      );
+    });
+    const displayName = matched?.name || a.goal || squadGoals[0]?.name || 'squad goal';
+    return `Add RM ${a.amount} to ${displayName}`;
+  }
+  return 'Confirm action';
+}
 
   return (
     <div
