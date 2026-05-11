@@ -53,7 +53,7 @@ export default function TransactionsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
       {/* Purple header */}
-      <div style={{ background: '#6C63FF', padding: '48px 20px 52px' }}>
+      <div style={{ background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', padding: '48px 20px 52px' }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Transactions</h2>
         <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 14 }}>Your full spending history</p>
         <div style={{

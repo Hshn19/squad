@@ -8,7 +8,7 @@ const CATEGORIES = [
   { label: 'Groceries', current: 120, better: 90,  color: '#FFE66D' },
   { label: 'Bills',     current: 100, better: 100, color: '#A8E6CF' },
   { label: 'Shopping',  current: 85,  better: 50,  color: '#F8B500' },
-  { label: 'Squad',     current: 55,  better: 55,  color: '#6C63FF' },
+  { label: 'Squad',     current: 55,  better: 55,  color: '#6a3de8' },
 ];
 
 const INSIGHTS = [
@@ -359,7 +359,7 @@ export default function MirrorPage() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
       {/* Header */}
-      <div style={{ background: '#6C63FF', padding: '48px 20px 28px' }}>
+      <div style={{ background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', padding: '48px 20px 28px' }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Spending Mirror</h2>
         <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 14 }}>See where your money really goes</p>
         <div style={{
@@ -418,7 +418,7 @@ export default function MirrorPage() {
                 {[
                   { label: 'Total spent',    val: `RM ${totalSpent}`,  color: '#1a1a2e' },
                   { label: 'Solo spending',  val: `RM ${soloSpent}`,   color: '#1a1a2e' },
-                  { label: 'Squad spending', val: `RM ${squadSpent}`,  color: '#6C63FF' },
+                  { label: 'Squad spending', val: `RM ${squadSpent}`,  color: '#6a3de8' },
                 ].map((s) => (
                   <div key={s.label} style={{ flex: 1, textAlign: 'center' }}>
                     <p style={{ fontSize: 9, color: '#aaa' }}>{s.label}</p>
@@ -436,22 +436,22 @@ export default function MirrorPage() {
               </div>
               <LineChart
                 lines={[
-                  { data: liveHistory.map((h) => h.personal), color: '#6C63FF' },
+                  { data: liveHistory.map((h) => h.personal), color: '#6a3de8' },
                   { data: liveHistory.map((h) => h.squad),    color: '#00C896' },
                 ]}
                 xLabels={xMonths}
                 height={100}
               />
               <Legend items={[
-                { label: 'Personal', color: '#6C63FF' },
+                { label: 'Personal', color: '#6a3de8' },
                 { label: 'Squad',    color: '#00C896' },
               ]} />
               <div style={{
-                marginTop: 8, background: '#EEEDFE', borderRadius: 8,
+                marginTop: 8, background: 'rgba(106,61,232,0.1)', borderRadius: 8,
                 padding: '7px 10px', display: 'flex', justifyContent: 'space-between',
               }}>
-                <span style={{ fontSize: 10, color: '#534AB7' }}>Squad saves you on average</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: '#6C63FF' }}>
+                <span style={{ fontSize: 10, color: '#9c6fff' }}>Squad saves you on average</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: '#6a3de8' }}>
                   RM {Math.round(liveHistory.reduce((s, h) => s + h.squad, 0) / liveHistory.length)}/mo
                 </span>
               </div>
@@ -532,7 +532,7 @@ export default function MirrorPage() {
         {/* ── INSIGHTS ── */}
         {tab === 'insights' && (
           <>
-            <div style={{ background: 'linear-gradient(135deg,#6C63FF,#9C8FFF)', borderRadius: 12, padding: '10px 12px', marginBottom: 10 }}>
+            <div style={{ background: 'linear-gradient(135deg, #2a1260, #4a2aa0)', borderRadius: 12, padding: '10px 12px', marginBottom: 10 }}>
               <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.8px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 3 }}>AI Coach</p>
               <p style={{ fontSize: 11, color: '#fff', lineHeight: 1.5 }}>
                 Biggest leakage: food at RM {mergedCategories.find(c => c.label === 'Food')?.current}. Cutting to RM 200 saves RM {(mergedCategories.find(c => c.label === 'Food')?.current || 280) - 200} — covers Netflix + Spotify for 3 months.
@@ -558,7 +558,7 @@ export default function MirrorPage() {
           <>
             {forecastLoading && (
               <div style={{
-                background: 'linear-gradient(135deg,#6C63FF,#9C8FFF)',
+                background: 'linear-gradient(135deg, #2a1260, #4a2aa0)',
                 borderRadius: 16, padding: '32px 20px', marginBottom: 10,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
               }}>
@@ -583,7 +583,7 @@ export default function MirrorPage() {
                   onClick={() => { setForecastFetched(false); setForecastError(false); fetchForecast(); }}
                   style={{
                     padding: '10px 20px', borderRadius: 12, border: 'none',
-                    background: '#6C63FF', color: '#fff', fontSize: 13,
+                    background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', color: '#fff', fontSize: 13,
                     fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >Retry</button>
@@ -592,7 +592,7 @@ export default function MirrorPage() {
 
             {!forecast && !forecastLoading && !forecastError && (
               <div style={{
-                background: 'linear-gradient(135deg,#6C63FF,#9C8FFF)',
+                background: 'linear-gradient(135deg, #2a1260, #4a2aa0)',
                 borderRadius: 16, padding: '28px 20px', textAlign: 'center', marginBottom: 10,
               }}>
                 <p style={{ fontSize: 30, marginBottom: 8 }}>🔮</p>
@@ -602,7 +602,7 @@ export default function MirrorPage() {
                 </p>
                 <button onClick={fetchForecast} style={{
                   padding: '12px 28px', borderRadius: 12, border: 'none',
-                  background: '#fff', color: '#6C63FF',
+                  background: '#fff', color: '#6a3de8',
                   fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
                 }}>Generate forecast</button>
               </div>
@@ -611,7 +611,7 @@ export default function MirrorPage() {
             {forecast && !forecastLoading && (
               <>
                 {/* Coach */}
-                <div style={{ background: 'linear-gradient(135deg,#6C63FF,#9C8FFF)', borderRadius: 14, padding: '12px 14px', marginBottom: 10 }}>
+                <div style={{ background: 'linear-gradient(135deg, #2a1260, #4a2aa0)', borderRadius: 14, padding: '12px 14px', marginBottom: 10 }}>
                   <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.8px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4 }}>AI Coach</p>
                   <p style={{ fontSize: 12, color: '#fff', lineHeight: 1.6 }}>{forecast.coachMessage}</p>
                 </div>
@@ -629,7 +629,7 @@ export default function MirrorPage() {
                     <>
                       <LineChart
                         lines={[
-                          { data: forecastPersonal, color: '#6C63FF' },
+                          { data: forecastPersonal, color: '#6a3de8' },
                           { data: forecastSquad,    color: '#00C896' },
                         ]}
                         xLabels={forecastMonths}
@@ -637,9 +637,9 @@ export default function MirrorPage() {
                         predicted={predIdxs}
                       />
                       <Legend items={[
-                        { label: 'Personal',  color: '#6C63FF' },
+                        { label: 'Personal',  color: '#6a3de8' },
                         { label: 'Squad',     color: '#00C896' },
-                        { label: 'Predicted', color: '#6C63FF', dashed: true },
+                        { label: 'Predicted', color: '#6a3de8', dashed: true },
                       ]} />
                     </>
                   ) : (
@@ -693,9 +693,9 @@ export default function MirrorPage() {
                       borderBottom: i < 2 ? '0.5px solid #f2f2f2' : 'none',
                     }}>
                       <div style={{
-                        width: 36, height: 36, borderRadius: 10, background: '#EEEDFE',
+                        width: 36, height: 36, borderRadius: 10, background: 'rgba(106,61,232,0.1)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 700, color: '#6C63FF', flexShrink: 0,
+                        fontSize: 11, fontWeight: 700, color: '#6a3de8', flexShrink: 0,
                       }}>{m.month}</div>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
@@ -727,7 +727,7 @@ export default function MirrorPage() {
                   style={{
                     width: '100%', padding: 12, borderRadius: 14,
                     border: '0.5px solid #e0e0e8', background: '#fff',
-                    fontSize: 13, fontWeight: 600, color: '#6C63FF',
+                    fontSize: 13, fontWeight: 600, color: '#6a3de8',
                     cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >↻ Refresh forecast</button>

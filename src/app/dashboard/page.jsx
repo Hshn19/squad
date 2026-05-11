@@ -33,7 +33,7 @@ const SPENDING = [
   { label: 'Transport', value: 160, color: '#4ECDC4' },
   { label: 'Groceries', value: 120, color: '#FFE66D' },
   { label: 'Bills',     value: 100, color: '#A8E6CF' },
-  { label: 'Squad',     value: 55,  color: '#6C63FF' },
+  { label: 'Squad',     value: 55,  color: '#6a3de8' },
 ];
 
 // Mini sparkline — just 4 points, compact
@@ -71,7 +71,7 @@ export default function DashboardPage() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
       {/* ── Purple header ── */}
-      <div style={{ background: '#6C63FF', padding: '48px 20px 52px' }}>
+      <div style={{ background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', padding: '48px 20px 52px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div>
             <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 2 }}>Good morning,</p>
@@ -134,13 +134,13 @@ export default function DashboardPage() {
           </div>
           <span style={{
             display: 'inline-flex', padding: '3px 9px', borderRadius: 20,
-            fontSize: 10, fontWeight: 600, background: '#EEEDFE', color: '#534AB7',
+            fontSize: 10, fontWeight: 600, background: 'rgba(106,61,232,0.1)', color: '#9c6fff',
           }}>Best: 21 days</span>
         </div>
 
         {/* AI Coach */}
         <div style={{
-          background: 'linear-gradient(135deg,#6C63FF,#9C8FFF)',
+          background: 'linear-gradient(135deg, #2a1260, #4a2aa0)',
           borderRadius: 16, margin: '0 14px 10px', padding: 14,
         }}>
           <p style={{
@@ -167,17 +167,17 @@ export default function DashboardPage() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{
-                width: 28, height: 28, borderRadius: 8, background: '#EEEDFE',
+                width: 28, height: 28, borderRadius: 8, background: 'rgba(106,61,232,0.1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <i className="ti ti-chart-donut" style={{ fontSize: 14, color: '#6C63FF' }} />
+                <i className="ti ti-chart-donut" style={{ fontSize: 14, color: '#6a3de8' }} />
               </div>
               <p style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>Spending Mirror</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{
                 padding: '3px 9px', borderRadius: 20,
-                fontSize: 10, fontWeight: 600, background: '#EEEDFE', color: '#534AB7',
+                fontSize: 10, fontWeight: 600, background: 'rgba(106,61,232,0.1)', color: '#9c6fff',
               }}>May 2026</span>
               <i className="ti ti-chevron-right" style={{ fontSize: 14, color: '#bbb' }} />
             </div>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
             display: 'flex', gap: 0,
           }}>
             {[
-              { label: 'Spending trend',  data: [720, 850, 780, 800], color: '#6C63FF', suffix: '↑ vs Mar' },
+              { label: 'Spending trend',  data: [720, 850, 780, 800], color: '#6a3de8', suffix: '↑ vs Mar' },
               { label: 'Savings trend',   data: [180, 120, 160, 145], color: '#00C896', suffix: '↓ vs Feb' },
               { label: 'Squad spending',  data: [40,  50,  50,  55],  color: '#9C8FFF', suffix: '↑ steady' },
             ].map((s, i) => (
@@ -228,7 +228,7 @@ export default function DashboardPage() {
 
           {/* CTA button */}
           <div style={{
-            background: '#6C63FF',
+            background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)',
             padding: '11px 14px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
@@ -250,7 +250,7 @@ export default function DashboardPage() {
             <span>Recent</span>
             <span
               onClick={() => router.push('/transactions')}
-              style={{ fontSize: 11, color: '#6C63FF', fontWeight: 500, cursor: 'pointer' }}
+              style={{ fontSize: 11, color: '#6a3de8', fontWeight: 500, cursor: 'pointer' }}
             >See all</span>
           </div>
           {(recentTx || STATIC_TX).map((tx, i, arr) => (

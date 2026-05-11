@@ -5,26 +5,49 @@
 }
 
 body {
-  background: #F8F9FB;
+  background: #0d0621;
   font-family: 'DM Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   color: #1A1D23;
 }
 
-/* Hide scrollbar for filter chip rows */
-::-webkit-scrollbar {
-  display: none;
+main > * {
+  animation: pageFadeIn 0.25s ease both;
 }
 
-/* Slider thumb — teal */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+button:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+html { scroll-behavior: smooth; }
+
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { display: none; }
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 18px; height: 18px;
   border-radius: 50%;
   background: #fff;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
 }
 
 input[type='range'] {
@@ -36,7 +59,6 @@ input[type='range'] {
   cursor: pointer;
 }
 
-/* Ensure buttons inherit font */
-button, input, select, textarea {
-  font-family: inherit;
-}
+button, input, select, textarea { font-family: inherit; }
+
+@keyframes spin { to { transform: rotate(360deg); } }

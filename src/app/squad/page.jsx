@@ -50,7 +50,7 @@ export default function SquadPage() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
       {/* Purple header */}
-      <div style={{ background: '#6C63FF', padding: '48px 20px 56px' }}>
+      <div style={{ background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', padding: '48px 20px 56px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Squad Savings</h2>
@@ -151,7 +151,7 @@ export default function SquadPage() {
                   borderTop: '0.5px solid #f2f2f2',
                   background: 'none', border: 'none',
                   borderTop: '0.5px solid #f2f2f2',
-                  fontSize: 13, fontWeight: 600, color: '#6C63FF',
+                  fontSize: 13, fontWeight: 600, color: '#6a3de8',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 }}
               >
@@ -171,10 +171,10 @@ export default function SquadPage() {
           }}
         >
           <div style={{
-            width: 40, height: 40, borderRadius: '50%', background: '#EEEDFE',
+            width: 40, height: 40, borderRadius: '50%', background: 'rgba(106,61,232,0.1)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <i className="ti ti-plus" style={{ fontSize: 20, color: '#6C63FF' }} />
+            <i className="ti ti-plus" style={{ fontSize: 20, color: '#6a3de8' }} />
           </div>
           <p style={{ fontSize: 13, fontWeight: 600, color: '#666' }}>Start a new goal</p>
           <p style={{ fontSize: 11, color: '#aaa' }}>Tap to create and invite friends</p>

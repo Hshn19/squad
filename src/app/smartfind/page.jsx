@@ -55,7 +55,7 @@ const TAB_FILTERS = {
 
 function tagClass(t) {
   if (/off|promo|deal|free|discount|budget/i.test(t)) return { bg: '#FAEEDA', color: '#854F0B' };
-  if (/premium|luxury|5-star/i.test(t)) return { bg: '#EEEDFE', color: '#534AB7' };
+  if (/premium|luxury|5-star/i.test(t)) return { bg: '#EEEDFE', color: '#9c6fff' };
   return { bg: '#E1F5EE', color: '#0F6E56' };
 }
 
@@ -83,7 +83,7 @@ export default function SmartFindPage() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
       {/* Purple header */}
-      <div style={{ background: '#6C63FF', padding: '48px 20px 24px' }}>
+      <div style={{ background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', padding: '48px 20px 24px' }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 2 }}>Squad Smart Find</h2>
         <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 14 }}>Deals your whole group can afford</p>
 
@@ -160,7 +160,7 @@ export default function SmartFindPage() {
 
         {/* AI tip */}
         <div style={{
-          background: 'linear-gradient(135deg,#6C63FF,#9C8FFF)',
+          background: 'linear-gradient(135deg, #2a1260, #4a2aa0)',
           borderRadius: 12, padding: '10px 12px', marginBottom: 10,
         }}>
           <p style={{
@@ -221,7 +221,7 @@ export default function SmartFindPage() {
                     <div style={{ fontSize: 11, color: '#999', marginTop: 1 }}>{item.sub}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#6C63FF' }}>RM {item.price}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#6a3de8' }}>RM {item.price}</div>
                     <div style={{ fontSize: 10, color: '#00B894', marginTop: 1 }}>RM {perHead} p/person</div>
                   </div>
                 </div>
@@ -247,9 +247,9 @@ export default function SmartFindPage() {
 
                 {/* Vote strip */}
                 <div style={{
-                  background: '#EEEDFE', borderRadius: 8, padding: '6px 10px',
+                  background: 'rgba(106,61,232,0.1)', borderRadius: 8, padding: '6px 10px',
                   marginTop: 7, display: 'flex', alignItems: 'center', gap: 6,
-                  fontSize: 11, color: '#534AB7',
+                  fontSize: 11, color: '#9c6fff',
                 }}>
                   <div style={{ display: 'flex', gap: 3 }}>
                     {MEMBERS.map((m, i) => (
@@ -289,7 +289,7 @@ export default function SmartFindPage() {
                       onClick={() => bookDeal(item.title, perHead)}
                       style={{
                         border: 'none', borderRadius: 8, padding: '6px 12px',
-                        fontSize: 11, fontWeight: 600, background: '#6C63FF', color: '#fff',
+                        fontSize: 11, fontWeight: 600, background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', color: '#fff',
                         cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >Book for squad</button>

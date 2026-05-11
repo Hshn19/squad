@@ -97,7 +97,7 @@ function TransferInner() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
 
       {/* Purple header */}
-      <div style={{ background: '#6C63FF', padding: '48px 20px 60px' }}>
+      <div style={{ background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', padding: '48px 20px 60px' }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Transfer</h2>
         <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Send money or settle with your Squad</p>
         <div style={{
@@ -118,7 +118,7 @@ function TransferInner() {
           <div style={{ display: 'flex', gap: 8 }}>
             {SETTLE.map((s, i) => (
               <div key={i} style={{ flex: 1, background: '#fff', border: '0.5px solid #eee', borderRadius: 12, padding: 10, textAlign: 'center', cursor: 'pointer' }}>
-                <i className={`ti ${s.icon}`} style={{ fontSize: 20, color: '#6C63FF', display: 'block', marginBottom: 4 }} />
+                <i className={`ti ${s.icon}`} style={{ fontSize: 20, color: '#6a3de8', display: 'block', marginBottom: 4 }} />
                 <p style={{ fontSize: 11, fontWeight: 600, color: '#1a1a2e' }}>{s.label}</p>
                 <span style={{ fontSize: 12, fontWeight: 600, color: s.positive ? '#00C896' : '#FF6B6B' }}>{s.amount}</span>
               </div>
@@ -172,7 +172,7 @@ function TransferInner() {
           </div>
 
           {selectedContact && (
-            <div style={{ marginBottom: 10, padding: '6px 12px', background: '#EEEDFE', borderRadius: 8, fontSize: 12, color: '#534AB7', fontWeight: 500 }}>
+            <div style={{ marginBottom: 10, padding: '6px 12px', background: 'rgba(106,61,232,0.1)', borderRadius: 8, fontSize: 12, color: '#9c6fff', fontWeight: 500 }}>
               Sending to: <strong>{selectedContact}</strong>
             </div>
           )}
@@ -220,12 +220,12 @@ function TransferInner() {
           {/* Squad toggle */}
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#EEEDFE', borderRadius: 12, padding: '12px 14px', marginBottom: 12,
+            background: 'rgba(106,61,232,0.1)', borderRadius: 12, padding: '12px 14px', marginBottom: 12,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <i className="ti ti-users" style={{ fontSize: 18, color: '#6C63FF' }} />
+              <i className="ti ti-users" style={{ fontSize: 18, color: '#6a3de8' }} />
               <div>
-                <p style={{ fontSize: 13, fontWeight: 500, color: '#534AB7' }}>Split with Squad?</p>
+                <p style={{ fontSize: 13, fontWeight: 500, color: '#9c6fff' }}>Split with Squad?</p>
                 <span style={{ fontSize: 11, color: '#9C8FFF', display: 'block' }}>Logs this in the group ledger</span>
               </div>
             </div>
@@ -260,7 +260,7 @@ function TransferInner() {
                       <span style={{ fontSize: 11, color: '#888' }}>{sq.sub}</span>
                     </div>
                     <div style={{
-                      width: 22, height: 22, background: '#6C63FF', borderRadius: '50%',
+                      width: 22, height: 22, background: 'linear-gradient(160deg, #1a0a3d, #3d1f8a)', borderRadius: '50%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       opacity: selectedSquad === sq.key ? 1 : 0, transition: 'opacity .2s',
                     }}>
@@ -270,8 +270,8 @@ function TransferInner() {
                 ))}
               </div>
               {activeSquad && (
-                <div style={{ background: '#f0f0fa', borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#534AB7', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <i className="ti ti-info-circle" style={{ fontSize: 16, color: '#6C63FF', flexShrink: 0 }} />
+                <div style={{ background: '#f0f0fa', borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#9c6fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <i className="ti ti-info-circle" style={{ fontSize: 16, color: '#6a3de8', flexShrink: 0 }} />
                   <span dangerouslySetInnerHTML={{ __html: activeSquad.hint }} />
                 </div>
               )}
