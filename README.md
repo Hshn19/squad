@@ -148,6 +148,7 @@ AI-powered group deal finder — finds activities your whole squad can afford.
 ---
 
 ## 🏗️ Project Structure
+```
 src/
 ├── app/
 │   ├── dashboard/        # Home — balance, AI coach, live tip, spending mirror card
@@ -166,10 +167,11 @@ src/
 │   ├── VoiceModal.jsx    # Voice capture → local fast-path → Groq → confirm/execute
 │   └── AICoach.jsx       # Floating AI chat coach
 └── lib/
-└── AppContext.jsx    # Global state — balances, transactions, squad goals, contacts
+    └── AppContext.jsx    # Global state — balances, transactions, squad goals, contacts
+```
 
----
-
+Navigation
+```
 Navigation
 ──────────────────────────────────────────────
 "Go to mirror"              → Spending Mirror
@@ -177,12 +179,14 @@ Navigation
 "Go to transactions"        → Transaction History
 "Go to Smart Find"          → Squad Smart Find
 "Go home"                   → Dashboard
+
 Transfers
 ──────────────────────────────────────────────
 "Transfer RM20 to Ahmad"    → Pre-fills Transfer page
 "Send RM50 to Sha"          → Pre-fills Transfer page
 "Pay Wei RM10"              → Pre-fills Transfer page
 "Send RM30 to Ahmad squad"  → Pre-fills + auto-toggles squad split
+
 Expenses (auto-categorised)
 ──────────────────────────────────────────────
 "I spent RM12 on food"      → Food expense
@@ -190,6 +194,7 @@ Expenses (auto-categorised)
 "Bought boba RM7"           → Food expense
 "Paid Celcom RM50"          → Bills expense
 "Bought at Shopee RM35"     → Shopping expense
+
 Balance & Goals
 ──────────────────────────────────────────────
 "What's my balance?"        → Shows live balance toast
@@ -197,9 +202,7 @@ Balance & Goals
 "Add RM100 to Tokyo trip"   → Contributes to Tokyo goal
 "Contribute RM50 to Penang" → Fuzzy-matches Penang Trip
 "Put RM200 into laptop"     → Contributes to Laptop goal
-
----
-
+```
 ## 🚀 Run Locally
 
 ```bash
