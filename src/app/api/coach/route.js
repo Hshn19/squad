@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const FALLBACK_TIPS = [
-  "Your food spending is your biggest leak this month — try cooking 2× a week to save ~RM 60 lah!",
+  "Your food spending is your biggest leak this month — try cooking 2× a week to save ~RM 60!",
   "You're on a 12-day saving streak — don't break it now! Small daily savings add up to big wins.",
   "Your Squad pool is RM 270 — use Smart Find to book group activities and split costs automatically.",
   "Transport costs can be cut by RM 40/month with MRT + Grab pooling instead of solo rides.",
@@ -51,7 +51,7 @@ Rules:
 - Keep responses under 3 sentences
 - Be specific with RM amounts
 - Give actionable Malaysian-context advice
-- Use casual friendly tone, occasional Malay words (boleh, lah, kan)
+- Use casual friendly tone
 - Never mention GPT, Claude, Groq, or that you are an AI`;
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
