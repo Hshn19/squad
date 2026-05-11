@@ -1,12 +1,12 @@
-# FinWise 💸
+# Squad 💸
 ### AI-powered budgeting & group savings for Malaysian youth
 
-> **UTMx Hackathon 2026 · GX Bank Challenge**  
+> **UTMx Hackathon 2026**  
 > Built by **Team Binary Rookies**
 
 <div align="center">
 
-🔗 **[Try the live app → finwise-app-three.vercel.app](https://finwise-app-three.vercel.app/)**
+🔗 **[Try the live app → squad-app-three.vercel.app](https://squad-app-three.vercel.app/)**
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
 ![Groq](https://img.shields.io/badge/Groq-LLaMA_3.3-orange?style=for-the-badge)
